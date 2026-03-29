@@ -76,7 +76,7 @@ TIMEZONE_OFFSET    = 3    # Israel (UTC+3)
 # ───────────────────────────────────────────────────────────────────────────────
 PLAYER_WATCH = [
     {
-        "display_name": "דני אבדיה",
+        "display_name": "Deni Avdija",
         "espn_id":      "4683021",
         "team_id":      "22",           # Portland Trail Blazers
         "team_name":    "Portland Trail Blazers",
@@ -977,11 +977,11 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
           <div style="font-size:13px; font-weight:600; color:#64748b;">
             🏀 {ps['player_name']} | {ps['away']} @ {ps['home']} ({ps['game_date_il']})
           </div>
-          <div style="font-size:14px; color:#64748b; margin-top:4px;">לא שיחק (DNP)</div>
+          <div style="font-size:14px; color:#64748b; margin-top:4px;">Did Not Play (DNP)</div>
         </div>"""
         else:
             result_color = "#16a34a" if ps["won"] else "#dc2626"
-            result_text  = "ניצחון" if ps["won"] else "הפסד"
+            result_text  = "Win" if ps["won"] else "Loss"
             pm_val       = ps.get("plus_minus", "?")
             try:
                 pm_color = "#16a34a" if int(pm_val) > 0 else ("#dc2626" if int(pm_val) < 0 else "#64748b")
@@ -1084,7 +1084,7 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
         plain += "\n---\n"
         for ps in player_stats:
             if ps.get("dnp"):
-                plain += f"\n🏀 {ps['player_name']} לא שיחק ({ps['game_date_il']})\n"
+                plain += f"\n🏀 {ps['player_name']} Did Not Play ({ps['game_date_il']})\n"
             else:
                 result = "ניצחון" if ps["won"] else "הפסד"
                 pm_str = ps.get("plus_minus", "?")
@@ -1094,8 +1094,8 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
                     pass
                 plain += (f"\n🏀 {ps['player_name']} | {ps['away']} {ps['away_score']}–{ps['home_score']} {ps['home']}"
                           f" ({result}, {ps['game_date_il']})\n"
-                          f"   {ps['min']} דק׳ · {ps['pts']} pts · {ps['reb']} reb · {ps['ast']} ast · {pm_str}\n"
-                          f"   FG {ps['fg']} · 3PT {ps['three_pt']} · FT {ps['ft']}"
+                          f"   {ps['min']} min · {ps['pts']} pts · {ps['reb']} reb · {ps['ast']} ast · {pm_str}\n"
+                          f"   FG {ps['fg'].replace('-','/')} · 3PT {ps['three_pt'].replace('-','/')} · FT {ps['ft'].replace('-','/')}"
                           f" · {ps['stl']} stl · {ps['blk']} blk · {ps['to']} to · {ps['pf']} pf\n")
     plain += f"\nEdit your teams: https://sports-reminder-ui.vercel.app"
 
