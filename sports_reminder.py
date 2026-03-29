@@ -933,6 +933,11 @@ def fetch_player_last_game_stats(player: dict) -> dict | None:
                         "stl":          stat_map.get("STL", "?"),
                         "blk":          stat_map.get("BLK", "?"),
                         "fg":           stat_map.get("FG", "?"),
+                        "three_pt":     stat_map.get("3PT", "?"),
+                        "ft":           stat_map.get("FT", "?"),
+                        "to":           stat_map.get("TO", "?"),
+                        "pf":           stat_map.get("PF", "?"),
+                        "plus_minus":   stat_map.get("+/-", "?"),
                         "min":          stat_map.get("MIN", "?"),
                         "dnp":          athlete.get("didNotPlay", False),
                     }
@@ -977,19 +982,49 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
         else:
             result_color = "#16a34a" if ps["won"] else "#dc2626"
             result_text  = "ניצחון" if ps["won"] else "הפסד"
+            pm_val       = ps.get("plus_minus", "?")
+            try:
+                pm_color = "#16a34a" if int(pm_val) > 0 else ("#dc2626" if int(pm_val) < 0 else "#64748b")
+                pm_display = f"+{pm_val}" if int(pm_val) > 0 else str(pm_val)
+            except (ValueError, TypeError):
+                pm_color   = "#64748b"
+                pm_display = pm_val
             player_stats_html += f"""
         <div style="margin:16px 0 0; padding:12px 16px; background:#eff6ff;
                     border-radius:8px; border-left:3px solid #1a56db;">
-          <div style="font-size:13px; font-weight:600; color:#1a56db; margin-bottom:6px;">
+          <div style="font-size:13px; font-weight:600; color:#1a56db; margin-bottom:8px;">
             🏀 {ps['player_name']} | {ps['away']} {ps['away_score']}–{ps['home_score']} {ps['home']}
             &nbsp;<span style="color:{result_color}; font-weight:700;">{result_text}</span>
             <span style="font-weight:400; color:#64748b;"> ({ps['game_date_il']})</span>
           </div>
-          <div style="font-size:22px; font-weight:700; color:#111; letter-spacing:-0.5px;">
-            {ps['pts']} pts &nbsp;·&nbsp; {ps['reb']} reb &nbsp;·&nbsp; {ps['ast']} ast
-          </div>
-          <div style="font-size:12px; color:#64748b; margin-top:4px;">
-            {ps['min']} דק׳ &nbsp;·&nbsp; FG {ps['fg']} &nbsp;·&nbsp; {ps['stl']} stl &nbsp;·&nbsp; {ps['blk']} blk
+          <table style="width:100%; border-collapse:collapse; margin-bottom:8px;">
+            <tr>
+              <td style="text-align:center; padding:4px 6px; border-right:1px solid #bfdbfe;">
+                <div style="font-size:19px; font-weight:700; color:#64748b;">{ps['min']}</div>
+                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; margin-top:2px;">MIN</div>
+              </td>
+              <td style="text-align:center; padding:4px 6px; border-right:1px solid #bfdbfe;">
+                <div style="font-size:19px; font-weight:700; color:#1a56db;">{ps['pts']}</div>
+                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; margin-top:2px;">PTS</div>
+              </td>
+              <td style="text-align:center; padding:4px 6px; border-right:1px solid #bfdbfe;">
+                <div style="font-size:19px; font-weight:700; color:#111;">{ps['reb']}</div>
+                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; margin-top:2px;">REB</div>
+              </td>
+              <td style="text-align:center; padding:4px 6px; border-right:1px solid #bfdbfe;">
+                <div style="font-size:19px; font-weight:700; color:#111;">{ps['ast']}</div>
+                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; margin-top:2px;">AST</div>
+              </td>
+              <td style="text-align:center; padding:4px 6px;">
+                <div style="font-size:19px; font-weight:700; color:{pm_color};">{pm_display}</div>
+                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; margin-top:2px;">+/-</div>
+              </td>
+            </tr>
+          </table>
+          <div style="font-size:12px; color:#64748b; border-top:1px solid #bfdbfe; padding-top:6px;">
+            FG {ps['fg']} &nbsp;·&nbsp; 3PT {ps['three_pt']} &nbsp;·&nbsp; FT {ps['ft']}
+            &nbsp;·&nbsp; {ps['stl']} STL &nbsp;·&nbsp; {ps['blk']} BLK
+            &nbsp;·&nbsp; {ps['to']} TO &nbsp;·&nbsp; {ps['pf']} PF
           </div>
         </div>"""
 
@@ -1052,10 +1087,16 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
                 plain += f"\n🏀 {ps['player_name']} לא שיחק ({ps['game_date_il']})\n"
             else:
                 result = "ניצחון" if ps["won"] else "הפסד"
+                pm_str = ps.get("plus_minus", "?")
+                try:
+                    pm_str = f"+{pm_str}" if int(pm_str) > 0 else str(pm_str)
+                except (ValueError, TypeError):
+                    pass
                 plain += (f"\n🏀 {ps['player_name']} | {ps['away']} {ps['away_score']}–{ps['home_score']} {ps['home']}"
                           f" ({result}, {ps['game_date_il']})\n"
-                          f"   {ps['pts']} pts · {ps['reb']} reb · {ps['ast']} ast"
-                          f" · {ps['min']} דק׳ · FG {ps['fg']}\n")
+                          f"   {ps['min']} דק׳ · {ps['pts']} pts · {ps['reb']} reb · {ps['ast']} ast · {pm_str}\n"
+                          f"   FG {ps['fg']} · 3PT {ps['three_pt']} · FT {ps['ft']}"
+                          f" · {ps['stl']} stl · {ps['blk']} blk · {ps['to']} to · {ps['pf']} pf\n")
     plain += f"\nEdit your teams: https://sports-reminder-ui.vercel.app"
 
     msg.attach(MIMEText(plain, "plain"))
