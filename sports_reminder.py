@@ -70,6 +70,20 @@ GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")   # set env var or
 
 TIMEZONE_OFFSET    = 3    # Israel (UTC+3)
 
+# ───────────────────────────────────────────────────────────────────────────────
+# PLAYER WATCH — stats for specific players, shown in the morning email
+# Each entry: display_name, espn_id, team_id (ESPN), team_name, league_id
+# ───────────────────────────────────────────────────────────────────────────────
+PLAYER_WATCH = [
+    {
+        "display_name": "דני אבדיה",
+        "espn_id":      "4683021",
+        "team_id":      "22",           # Portland Trail Blazers
+        "team_name":    "Portland Trail Blazers",
+        "league_id":    "nba",
+    },
+]
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ESPN ENDPOINTS  (league_id → URL)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -832,9 +846,102 @@ def find_my_matches(tracked: list[dict], today: str) -> list[dict]:
     return matches
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────────────────────
+# PLAYER STATS — fetch last completed game stats for a watched player
+# ───────────────────────────────────────────────────────────────────────────────
+def fetch_player_last_game_stats(player: dict) -> dict | None:
+    """
+    Find the most recent completed NBA game for the player's team (checking
+    yesterday + today in UTC, to cover Israeli overnight games).
+    Returns a dict with game result + key stats, or None if not found.
+    """
+    now_utc = datetime.datetime.utcnow()
+    dates_to_check = [
+        (now_utc - datetime.timedelta(days=1)).strftime("%Y%m%d"),
+        now_utc.strftime("%Y%m%d"),
+    ]
+
+    for date_str in dates_to_check:
+        try:
+            url = (f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba"
+                   f"/scoreboard?dates={date_str}")
+            data = fetch_json(url)
+        except Exception:
+            continue
+
+        for event in data.get("events", []):
+            comp        = event.get("competitions", [{}])[0]
+            competitors = comp.get("competitors", [])
+            # Only completed games featuring our team
+            if not comp.get("status", {}).get("type", {}).get("completed"):
+                continue
+            our_team = next(
+                (c for c in competitors if c.get("team", {}).get("id") == player["team_id"]),
+                None
+            )
+            if not our_team:
+                continue
+
+            # Fetch full box score for this game
+            game_id = event["id"]
+            try:
+                summary = fetch_json(
+                    f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba"
+                    f"/summary?event={game_id}"
+                )
+            except Exception:
+                continue
+
+            # Find the player row in the boxscore
+            for team_data in summary.get("boxscore", {}).get("players", []):
+                for cat in team_data.get("statistics", []):
+                    athlete = next(
+                        (a for a in cat.get("athletes", [])
+                         if a.get("athlete", {}).get("id") == player["espn_id"]),
+                        None
+                    )
+                    if not athlete:
+                        continue
+
+                    labels   = cat.get("labels", [])
+                    stats    = athlete.get("stats", [])
+                    stat_map = {labels[i]: stats[i]
+                                for i in range(min(len(labels), len(stats)))}
+
+                    home = next((c for c in competitors if c.get("homeAway") == "home"), competitors[0])
+                    away = next((c for c in competitors if c.get("homeAway") == "away"), competitors[1])
+
+                    try:
+                        game_utc_dt = datetime.datetime.strptime(event["date"], "%Y-%m-%dT%H:%MZ")
+                        il_offset   = _israel_utc_offset_h(game_utc_dt)
+                        game_il     = game_utc_dt + datetime.timedelta(hours=il_offset)
+                        game_date_il = game_il.strftime("%d/%m")
+                    except Exception:
+                        game_date_il = date_str
+
+                    return {
+                        "player_name":  player["display_name"],
+                        "home":         home["team"]["displayName"],
+                        "away":         away["team"]["displayName"],
+                        "home_score":   home.get("score", ""),
+                        "away_score":   away.get("score", ""),
+                        "won":          our_team.get("winner", False),
+                        "game_date_il": game_date_il,
+                        "pts":          stat_map.get("PTS", "?"),
+                        "reb":          stat_map.get("REB", "?"),
+                        "ast":          stat_map.get("AST", "?"),
+                        "stl":          stat_map.get("STL", "?"),
+                        "blk":          stat_map.get("BLK", "?"),
+                        "fg":           stat_map.get("FG", "?"),
+                        "min":          stat_map.get("MIN", "?"),
+                        "dnp":          athlete.get("didNotPlay", False),
+                    }
+    return None
+
+
 # EMAIL
 # ─────────────────────────────────────────────────────────────────────────────
-def build_email_html(matches: list[dict], today: str) -> str:
+def build_email_html(matches: list[dict], today: str, player_stats: list[dict] | None = None) -> str:
     sport_emoji = {"soccer": "⚽", "basketball": "🏀"}
     rows = ""
     for m in matches:
@@ -853,6 +960,38 @@ def build_email_html(matches: list[dict], today: str) -> str:
             <div style="font-size:12px; color:#999;">Israel time</div>
           </td>
         </tr>"""
+
+
+    # Build player stats HTML block
+    player_stats_html = ""
+    for ps in (player_stats or []):
+        if ps.get("dnp"):
+            player_stats_html += f"""
+        <div style="margin:16px 0 0; padding:12px 16px; background:#f8fafc;
+                    border-radius:8px; border-left:3px solid #94a3b8;">
+          <div style="font-size:13px; font-weight:600; color:#64748b;">
+            🏀 {ps['player_name']} | {ps['away']} @ {ps['home']} ({ps['game_date_il']})
+          </div>
+          <div style="font-size:14px; color:#64748b; margin-top:4px;">לא שיחק (DNP)</div>
+        </div>"""
+        else:
+            result_color = "#16a34a" if ps["won"] else "#dc2626"
+            result_text  = "ניצחון" if ps["won"] else "הפסד"
+            player_stats_html += f"""
+        <div style="margin:16px 0 0; padding:12px 16px; background:#eff6ff;
+                    border-radius:8px; border-left:3px solid #1a56db;">
+          <div style="font-size:13px; font-weight:600; color:#1a56db; margin-bottom:6px;">
+            🏀 {ps['player_name']} | {ps['away']} {ps['away_score']}–{ps['home_score']} {ps['home']}
+            &nbsp;<span style="color:{result_color}; font-weight:700;">{result_text}</span>
+            <span style="font-weight:400; color:#64748b;"> ({ps['game_date_il']})</span>
+          </div>
+          <div style="font-size:22px; font-weight:700; color:#111; letter-spacing:-0.5px;">
+            {ps['pts']} pts &nbsp;·&nbsp; {ps['reb']} reb &nbsp;·&nbsp; {ps['ast']} ast
+          </div>
+          <div style="font-size:12px; color:#64748b; margin-top:4px;">
+            {ps['min']} דק׳ &nbsp;·&nbsp; FG {ps['fg']} &nbsp;·&nbsp; {ps['stl']} stl &nbsp;·&nbsp; {ps['blk']} blk
+          </div>
+        </div>"""
 
     _dt = datetime.datetime.strptime(today, "%Y-%m-%d")
     date_formatted = _dt.strftime("%A, %B ") + str(_dt.day)
@@ -875,6 +1014,7 @@ def build_email_html(matches: list[dict], today: str) -> str:
           <table style="width:100%; border-collapse:collapse;">
             {rows}
           </table>
+          {player_stats_html}
         </div>
         <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
           <a href="https://sports-reminder-ui.vercel.app"
@@ -886,7 +1026,7 @@ def build_email_html(matches: list[dict], today: str) -> str:
     </body></html>
     """
 
-def send_email(to: str, matches: list[dict], today: str):
+def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict] | None = None):
     if not GMAIL_APP_PASSWORD:
         print("❌  GMAIL_APP_PASSWORD not set. Export it as an env variable:")
         print("    export GMAIL_APP_PASSWORD='xxxx xxxx xxxx xxxx'")
@@ -905,10 +1045,21 @@ def send_email(to: str, matches: list[dict], today: str):
     plain = f"Your matches for {date_str}:\n\n"
     for m in matches:
         plain += f"  {m['away']} @ {m['home']}  —  {m['league_name']}  —  {m['time']} (IL)\n"
+    if player_stats:
+        plain += "\n---\n"
+        for ps in player_stats:
+            if ps.get("dnp"):
+                plain += f"\n🏀 {ps['player_name']} לא שיחק ({ps['game_date_il']})\n"
+            else:
+                result = "ניצחון" if ps["won"] else "הפסד"
+                plain += (f"\n🏀 {ps['player_name']} | {ps['away']} {ps['away_score']}–{ps['home_score']} {ps['home']}"
+                          f" ({result}, {ps['game_date_il']})\n"
+                          f"   {ps['pts']} pts · {ps['reb']} reb · {ps['ast']} ast"
+                          f" · {ps['min']} דק׳ · FG {ps['fg']}\n")
     plain += f"\nEdit your teams: https://sports-reminder-ui.vercel.app"
 
     msg.attach(MIMEText(plain, "plain"))
-    msg.attach(MIMEText(build_email_html(matches, today), "html"))
+    msg.attach(MIMEText(build_email_html(matches, today, player_stats), "html"))
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
@@ -990,7 +1141,19 @@ def main():
     print(f"\n🔍 Checking ESPN for today's games...")
     matches = find_my_matches(tracked, today)
 
-    # 3. Show results
+    # 3. Fetch player stats (last completed game for each watched player)
+    print(f"\n📊 Fetching player stats...")
+    player_stats = []
+    for p in PLAYER_WATCH:
+        ps = fetch_player_last_game_stats(p)
+        if ps:
+            label = "לא שיחק" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
+            print(f"   🏀 {ps['player_name']}: {label} ({ps['game_date_il']})")
+            player_stats.append(ps)
+        else:
+            print(f"   ⚠️  {p['display_name']}: לא נמצא משחק אחרון")
+
+    # 4. Show results
     if not matches:
         print(f"\n😴 No matches today for your teams.")
     else:
@@ -1001,7 +1164,7 @@ def main():
             print(f"      {m['league_name']}  —  {m['time']} (Israel time)")
             print()
 
-    # 4. Send email?
+    # 5. Send email?
     if test_mode:
         # Send a test email with dummy data if no real matches
         if not matches:
@@ -1011,14 +1174,14 @@ def main():
                 "tracked_team": "FC Barcelona", "league_name": "La Liga", "sport": "soccer"
             }]
         print(f"\n📧 Test mode — sending email to {GMAIL_SENDER}...")
-        send_email(GMAIL_SENDER, matches, today)
+        send_email(GMAIL_SENDER, matches, today, player_stats)
 
     elif send_mode:
-        if matches:
+        if matches or player_stats:
             print(f"\n📧 Sending email to {GMAIL_SENDER}...")
-            send_email(GMAIL_SENDER, matches, today)
+            send_email(GMAIL_SENDER, matches, today, player_stats)
         else:
-            print("\n📭 No matches → no email sent.")
+            print("\n📭 No matches and no player stats → no email sent.")
 
     else:
         print("ℹ️  Dry-run mode. Run with --send to send email, --test to test email delivery.")
