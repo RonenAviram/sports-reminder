@@ -1132,11 +1132,13 @@ MOCK_MATCHES = [
 ]
 
 def main():
-    args      = sys.argv[1:]
-    send_mode = "--send" in args
-    test_mode = "--test" in args
-    mock_mode = "--mock" in args
-    today     = today_israel()
+    args           = sys.argv[1:]
+    send_mode      = "--send" in args
+    test_mode      = "--test" in args
+    mock_mode      = "--mock" in args
+    stats_only     = "--stats-only" in args   # 07:00 IL — post-game stats only
+    no_stats       = "--no-stats"  in args   # 09:00 IL — morning games only
+    today          = today_israel()
 
     print(f"\n🗓️  Sports Reminder — {today}")
     print("=" * 50)
@@ -1167,6 +1169,28 @@ def main():
             print("\n   Run with --mock --send to actually send it.")
         return
 
+    # ── Stats-only mode (post-game email, 07:00 IL) ─────────────────────────────────────
+    if stats_only:
+        print("\n📊 Stats-only mode — fetching last game stats...")
+        player_stats = []
+        for p in PLAYER_WATCH:
+            ps = fetch_player_last_game_stats(p)
+            if ps:
+                label = "DNP" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
+                print(f"   🏀 {p['display_name']}: {label} ({ps['game_date_il']})")
+                player_stats.append(ps)
+            else:
+                print(f"   ⚠️  {p['display_name']}: no recent game found")
+        if send_mode:
+            if player_stats:
+                print(f"\n📧 Sending stats email to {GMAIL_SENDER}...")
+                send_email(GMAIL_SENDER, [], today, player_stats)
+            else:
+                print("\n📭 No player stats found → no email sent.")
+        else:
+            print("ℹ️  Dry-run (stats-only). Add --send to send.")
+        return
+
     # 1. Load tracked teams from Firestore
     print(f"\n📥 Loading teams from Firestore (doc: {FIRESTORE_DOC})...")
     tracked = load_tracked_teams(FIRESTORE_DOC)
@@ -1182,10 +1206,13 @@ def main():
     print(f"\n🔍 Checking ESPN for today's games...")
     matches = find_my_matches(tracked, today)
 
-    # 3. Fetch player stats (last completed game for each watched player)
-    print(f"\n📊 Fetching player stats...")
+    # 3. Fetch player stats (skipped when --no-stats)
     player_stats = []
-    for p in PLAYER_WATCH:
+    if no_stats:
+        print(f"\n📊 Skipping player stats (--no-stats mode).")
+    else:
+        print(f"\n📊 Fetching player stats...")
+    for p in ([] if no_stats else PLAYER_WATCH):
         ps = fetch_player_last_game_stats(p)
         if ps:
             label = "לא שיחק" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
