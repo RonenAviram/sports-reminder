@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sports Reminder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+    .pill-btn { transition: all 0.12s ease; }
+    .pill-btn:active { transform: scale(0.94); }
+    .league-arrow { transition: transform 0.2s ease; }
+    .league-arrow.open { transform: rotate(180deg); }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useMemo, useRef } = React;
+
+    // ──────────────────────────────────────────────────────────────────────────────────
+    // FIREBASE CONFIG
+    // ──────────────────────────────────────────────────────────────────────────────────
+    const FIREBASE_CONFIG = {
+      apiKey:            "AIzaSyCd3C1_XN69r8lWUBYPndoGFxmDjnsjX1E",
+      authDomain:        "sports-reminder-55578.firebaseapp.com",
+      projectId:         "sports-reminder-55578",
+      storageBucket:     "sports-reminder-55578.firebasestorage.app",
+      messagingSenderId: "953308585577",
+      appId:             "1:953308585577:web:3d7079049fc61ec1f08cf8"
+    };
+    const FIRESTORE_DOC    = "ronen";
+    const REMINDER_EMAIL   = "ronen6213@gmail.com";
+    const TIMEZONE_OFFSET  = 3;   // Israel summer (UTC+3)
+
+    const IS_CONFIGURED = !FIREBASE_CONFIG.apiKey.includes("YOUR_");
+    let db = null;
+    if (IS_CONFIGURED) {
+      const fbApp = firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.firestore(fbApp);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────────────
+    // SPORTS DATA  (2025–26 season)
+    // ──────────────────────────────────────────────────────────────────────────────────
+    const DATA = {
+      soccer: {
+        label: "Soccer",
+        emoji: "⚽",
+        accent: { bg: "bg-emerald-600", bgLight: "bg-emerald-50", border: "border-emerald-200",
+                  text: "text-emerald-700", badge: "bg-emerald-100 text-emerald-700",
+                  ring: "focus:ring-emerald-300", hover: "hover:bg-emerald-700" },
+        leagues: [
+          {
+            id: "premier_league", name: "Premier League", country: "England", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+            teams: ["Arsenal","Aston Villa","Bournemouth","Brentford","Brighton & Hove Albion",
+                    "Chelsea","Crystal Palace","Everton","Fulham","Ipswich Town","Leicester City",
+                    "Liverpool","Manchester City","Manchester United","Newcastle United",
+                    "Nottingham Forest","Southampton","Tottenham Hotspur","West Ham United",
+                    "Wolverhampton Wanderers"]
+          },
+          {
+            id: "la_liga", name: "La Liga", country: "Spain", flag: "🇪🇸",
+            teams: ["Real Madrid","FC Barcelona","Atletico Madrid","Sevilla FC","Real Betis",
+                    "Valencia CF","Athletic Club","Real Sociedad","Villarreal CF","RC Celta",
+                    "Getafe CF","RCD Mallorca","CA Osasuna","Rayo Vallecano","UD Las Palmas",
+                    "Girona FC","Deportivo Alaves","CD Leganes","RCD Espanyol","Real Valladolid"]
+          },
+          {
+            id: "bundesliga", name: "Bundesliga", country: "Germany", flag: "🇩🇪",
+            teams: ["Bayern Munich","Borussia Dortmund","RB Leipzig","Bayer Leverkusen",
+                    "Eintracht Frankfurt","VfB Stuttgart","SC Freiburg","1. FC Union Berlin",
+                    "FC Augsburg","TSG Hoffenheim","Borussia Monchengladbach","FSV Mainz 05",
+                    "VfL Wolfsburg","Werder Bremen","FC Heidenheim","Holstein Kiel",
+                    "FC St. Pauli","VfL Bochum"]
+          },
+          {
+            id: "serie_a", name: "Serie A", country: "Italy", flag: "🇮🇹",
+            teams: ["Inter Milan","AC Milan","Juventus","Atalanta","Bologna FC","AS Roma",
+                    "SS Lazio","Fiorentina","Torino FC","Napoli","Udinese","Genoa","Cagliari",
+                    "Hellas Verona","Lecce","Empoli","Venezia","Parma","Como","Monza"]
+          },
+          {
+            id: "ligue_1", name: "Ligue 1", country: "France", flag: "🇫🇷",
+            teams: ["Paris Saint-Germain","Marseille","Monaco","Lyon","Lille","Nice","Rennes",
+                    "Lens","Strasbourg","Nantes","Brest","Reims","Montpellier","Toulouse",
+                    "Le Havre","Auxerre","Angers","Saint-Etienne"]
+          },
+          {
+            id: "champions_league", name: "Champions League", country: "Europe", flag: "🏆",
+            teams: [
+              // England (6)
+              "Arsenal","Chelsea","Liverpool","Manchester City","Newcastle United","Tottenham Hotspur",
+              // Spain (5)
+              "Atletico Madrid","Athletic Club","FC Barcelona","Real Madrid","Villarreal CF",
+              // Italy (4)
+              "Atalanta","Inter Milan","Juventus","Napoli",
+              // Germany (4)
+              "Borussia Dortmund","Eintracht Frankfurt","Bayer Leverkusen","Bayern Munich",
+              // France (3)
+              "Monaco","Marseille","Paris Saint-Germain",
+              // Netherlands (2)
+              "Ajax","PSV Eindhoven",
+              // Portugal (2)
+              "Benfica","Sporting CP",
+              // Belgium (2)
+              "Club Brugge","Union Saint-Gilloise",
+              // Other countries
+              "Galatasaray","Slavia Prague","Bodo/Glimt","Olympiacos","FC Copenhagen",
+              "Pafos FC","Qarabag","Kairat Almaty"
+            ]
+          },
+          {
+            id: "europa_league", name: "Europa League", country: "Europe", flag: "🇪🇺",
+            teams: [
+              // From national leagues in this app
+              "Aston Villa","Nottingham Forest",
+              "Real Betis","Celta Vigo",
+              "SC Freiburg","VfB Stuttgart",
+              "Bologna FC","AS Roma",
+              "Lyon","Nice","Lille",
+              "Maccabi Tel Aviv",
+              // Other clubs
+              "Dinamo Zagreb","Feyenoord","Porto","Red Bull Salzburg","Rangers",
+              "Braga","Celtic","Fenerbahce","Ferencvaros","PAOK","Red Star Belgrade","Viktoria Plzen",
+              "FCSB","Ludogorets","Midtjylland","SC Basel","Sturm Graz","Young Boys",
+              "Brann","Genk","Go Ahead Eagles","Malmo FF","Panathinaikos","Utrecht"
+            ]
+          },
+          {
+            id: "israeli_pl_soccer", name: "Israeli Premier League", country: "Israel", flag: "🇮🇱",
+            teams: ["Maccabi Tel Aviv","Hapoel Tel Aviv","Maccabi Haifa","Beitar Jerusalem",
+                    "Hapoel Beer Sheva","Maccabi Petah Tikva","Bnei Yehuda","Maccabi Netanya",
+                    "Hapoel Jerusalem","Hapoel Haifa","Hapoel Hadera","FC Ashdod",
+                    "Hapoel Raanana","Ironi Kiryat Shmona","Bnei Sakhnin","Maccabi Bnei Raina"]
+          },
+          {
+            id: "mls", name: "MLS", country: "USA", flag: "🇺🇸",
+            teams: ["Atlanta United","Austin FC","Charlotte FC","Chicago Fire","Colorado Rapids",
+                    "Columbus Crew","DC United","FC Cincinnati","FC Dallas","Houston Dynamo",
+                    "Inter Miami","LA Galaxy","Los Angeles FC","Minnesota United","CF Montreal",
+                    "Nashville SC","New England Revolution","New York City FC","New York Red Bulls",
+                    "Orlando City","Philadelphia Union","Portland Timbers","Real Salt Lake",
+                    "San Jose Earthquakes","Seattle Sounders","Sporting Kansas City",
+                    "St. Louis City","Toronto FC","Vancouver Whitecaps","San Diego FC"]
+          }
+        ]
+      },
+      basketball: {
+        label: "Basketball",
+        emoji: "🏀",
+        accent: { bg: "bg-orange-500", bgLight: "bg-orange-50", border: "border-orange-200",
+                  text: "text-orange-600", badge: "bg-orange-100 text-orange-700",
+                  ring: "focus:ring-orange-300", hover: "hover:bg-orange-600" },
+        leagues: [
+          {
+            id: "euroleague", name: "EuroLeague", country: "Europe", flag: "🌍",
+            // 2025-26 season: 20 clubs (Hapoel Tel Aviv promoted, ALBA Berlin out)
+            teams: ["Real Madrid","FC Barcelona","Maccabi Tel Aviv","Hapoel Tel Aviv",
+                    "Olympiacos","Panathinaikos","Fenerbahce Beko","Anadolu Efes",
+                    "Bayern Munich","Virtus Bologna","Olimpia Milano","Monaco Basket",
+                    "Partizan Belgrade","Crvena Zvezda","ASVEL","Valencia Basket",
+                    "Baskonia","Zalgiris","Paris Basketball","Dubai Basketball"]
+          },
+          {
+            id: "eurocup", name: "EuroCup", country: "Europe", flag: "🌍",
+            // 2025-26 season: 20 clubs
+            teams: ["Hapoel Jerusalem","Cedevita Olimpija","Dolomiti Energia Trento",
+                    "Ratiopharm Ulm","Umana Reyer Venice","JL Bourg","Lietkabelis",
+                    "Manresa","London Lions","Aris Thessaloniki","Besiktas",
+                    "Buducnost Podgorica","Neptunas","NINERS Chemnitz","Panionios",
+                    "Slask Wroclaw","Turk Telekom","Cluj-Napoca",
+                    "Veolia Towers Hamburg","Bahcesehir College"]
+          },
+          {
+            id: "israeli_pl_basketball", name: "Israeli Premier League", country: "Israel", flag: "🇮🇱",
+            teams: ["Maccabi Tel Aviv","Hapoel Jerusalem","Hapoel Tel Aviv","Maccabi Rishon LeZion",
+                    "Ironi Ness Ziona","Hapoel Holon","Maccabi Ashdod","Hapoel Eilat",
+                    "Bnei Herzliya","Hapoel Galil Elyon","Maccabi Haifa","Elitzur Ramla"]
+          },
+          {
+            id: "nba", name: "NBA", country: "USA", flag: "🇺🇸",
+            teams: ["Atlanta Hawks","Boston Celtics","Brooklyn Nets","Charlotte Hornets",
+                    "Chicago Bulls","Cleveland Cavaliers","Dallas Mavericks","Denver Nuggets",
+                    "Detroit Pistons","Golden State Warriors","Houston Rockets","Indiana Pacers",
+                    "LA Clippers","Los Angeles Lakers","Memphis Grizzlies","Miami Heat",
+                    "Milwaukee Bucks","Minnesota Timberwolves","New Orleans Pelicans",
+                    "New York Knicks","Oklahoma City Thunder","Orlando Magic",
+                    "Philadelphia 76ers","Phoenix Suns","Portland Trail Blazers",
+                    "Sacramento Kings","San Antonio Spurs","Toronto Raptors","Utah Jazz",
+                    "Washington Wizards"]
+          }
+        ]
+      }
+    };
+
+    // ──────────────────────────────────────────────────────────────────────────────────
+    // HELPERS
+    // ──────────────────────────────────────────────────────────────────────────────────
+
+    // Key format: "TeamName|||sport|||leagueId"
+    function makeKey(name, sport, leagueId) { return `${name}|||${sport}|||${leagueId}`; }
+    function parseKey(key) {
+      const parts = key.split("|||");
+      return { name: parts[0], sport: parts[1], leagueId: parts[2] };
+    }
+
+    function findLeagueById(leagueId, sport) {
+      if (!DATA[sport]) return null;
+      return DATA[sport].leagues.find(l => l.id === leagueId) || null;
+    }
+
+    function findLeagueIdByName(leagueName, sport) {
+      if (!DATA[sport]) return "";
+      return DATA[sport].leagues.find(l => l.name === leagueName)?.id || "";
+    }
+
+    // Normalize old "football" sport key → "soccer"
+    function normalizeSport(sport) {
+      return sport === "football" ? "soccer" : sport;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────────────// COMPONENTS
+    // ──────────────────────────────────────────────────────────────────────────────────
+
+    function SportToggle({ sport, onChange }) {
+      return (
+        <div className="flex gap-1.5 p-1 bg-slate-800 rounded-xl">
+          {["soccer","basketball"].map(s => {
+            const active = sport === s;
+            const d = DATA[s];
+            return (
+              <button key={s} onClick={() => onChange(s)}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
+                  active ? `bg-white ${d.accent.text}` : "text-slate-400 hover:text-slate-200"
+                }`}>
+                <span>{d.emoji}</span>
+                <span>{d.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      );
+    }
+
+    function TeamPill({ name, selected, sport, onToggle }) {
+      const { accent } = DATA[sport];
+      return (
+        <button onClick={onToggle}
+          className={`pill-btn inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+            selected
+              ? `${accent.bg} border-transparent text-white shadow-sm`
+              : "bg-white border-gray-200 text-gray-700 hover:border-gray-400 hover:shadow-sm"
+          }`}>
+          {selected && <span className="text-xs">✓</span>}
+          {name}
+        </button>
+      );
+    }
+
+    function LeagueSection({ league, sport, selectedTeams, onToggle, forceOpen }) {
+      const [open, setOpen] = useState(false);
+      const { accent } = DATA[sport];
+
+      const visibleTeams = useMemo(() => league._filtered ?? league.teams, [league]);
+      const selectedCount = useMemo(
+        () => visibleTeams.filter(t => selectedTeams.has(makeKey(t, sport, league.id))).length,
+        [visibleTeams, selectedTeams, sport, league.id]
+      );
+
+      useEffect(() => {
+        if (forceOpen) setOpen(true);
+        else if (!forceOpen && open) setOpen(false);
+      }, [forceOpen]);
+
+      if (league._filtered && league._filtered.length === 0) return null;
+
+      return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <button onClick={() => setOpen(o => !o)}
+            className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl leading-none">{league.flag}</span>
+              <div>
+                <div className="font-semibold text-gray-900 text-sm">{league.name}</div>
+                <div className="text-xs text-gray-400 mt-0.5">{league.country} · {league.teams.length} teams</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {selectedCount > 0 && (
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${accent.badge}`}>
+                  {selectedCount}
+                </span>
+              )}
+              <span className={`league-arrow text-gray-400 text-xs ${open ? "open" : ""}`}>▼</span>
+            </div>
+          </button>
+
+          {open && (
+            <div className="px-4 pb-4 border-t border-gray-50 pt-3">
+              <div className="flex flex-wrap gap-2">
+                {visibleTeams.map(team => (
+                  <TeamPill key={team} name={team} sport={sport}
+                    selected={selectedTeams.has(makeKey(team, sport, league.id))}
+                    onToggle={() => onToggle(team, sport, league.id)} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function MyTeamsPanel({ selectedTeams, onRemove, avdiaStats, onToggleAvdiaStats }) {
+      const teams = useMemo(() => [...selectedTeams].map(parseKey), [selectedTeams]);
+      const soccer     = teams.filter(t => t.sport === "soccer");
+      const basketball = teams.filter(t => t.sport === "basketball");
+
+      if (teams.length === 0) return (
+        <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-6 text-center">
+          <p className="text-gray-400 text-sm">No teams tracked yet.</p>
+          <p className="text-gray-300 text-xs mt-1">Tap a team below to add it.</p>
+        </div>
+      );
+
+      function Group({ label, emoji, items, accentClass, sport: groupSport }) {
+        if (items.length === 0) return null;
+        return (
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+              {emoji} {label}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {items.map(({ name, sport, leagueId }) => {
+                const league = findLeagueById(leagueId, sport);
+                const isPortland = groupSport === "basketball" && name === "Portland Trail Blazers";
+                return (
+                  <React.Fragment key={makeKey(name, sport, leagueId)}>
+                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border ${accentClass}`}>
+                      <span>{name}</span>
+                      {league && (
+                        <span className="text-xs opacity-60">· {league.name}</span>
+                      )}
+                      <button onClick={() => onRemove(name, sport, leagueId)}
+                        className="ml-0.5 text-current opacity-50 hover:opacity-100 leading-none text-base font-bold">
+                        ×
+                      </button>
+                    </div>
+                    {isPortland && (
+                      <button onClick={onToggleAvdiaStats}
+                        title={avdiaStats ? "Disable Avdija stats email" : "Enable Avdija stats email"}
+                        className={`pill-btn flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                          avdiaStats
+                            ? "bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
+                            : "bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100"
+                        }`}>
+                        <span>📊</span>
+                        <span>Avdija stats</span>
+                        <span className="font-bold leading-none">{avdiaStats ? "✕" : "+"}</span>
+                      </button>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-4">
+          <Group label="Soccer" emoji="⚽" items={soccer} sport="soccer"
+            accentClass="bg-emerald-50 text-emerald-700 border-emerald-200" />
+          <Group label="Basketball" emoji="🏀" items={basketball} sport="basketball"
+            accentClass="bg-orange-50 text-orange-700 border-orange-200" />
+        </div>
+      );
+    }
+
+    function SetupScreen() {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
+          <div className="max-w-sm w-full bg-white rounded-3xl shadow-lg p-8 text-center">
+            <div className="text-5xl mb-4">🔧</div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Firebase Setup Needed</h2>
+            <p className="text-gray-500 text-sm mb-5 leading-relaxed">
+              Open <code className="bg-gray-100 rounded px-1.5 py-0.5 text-xs font-mono">ui/index.html</code> in a
+              text editor and fill in your Firebase project credentials in the{" "}
+              <code className="bg-gray-100 rounded px-1.5 py-0.5 text-xs font-mono">FIREBASE_CONFIG</code> section.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────────────
+    // MAIN APP
+    // ──────────────────────────────────────────────────────────────────────────────────
+    function App() {
+      const [sport, setSport]               = useState("soccer");
+      const [selectedTeams, setSelectedTeams] = useState(new Set());
+      const [searchQuery, setSearchQuery]   = useState("");
+      const [loadStatus, setLoadStatus]     = useState("loading"); // loading | loaded | error
+      const [saveStatus, setSaveStatus]     = useState("idle");    // idle | saving | saved | error
+      const [hasUnsaved, setHasUnsaved]     = useState(false);
+      const [showSavedBanner, setShowSavedBanner] = useState(false);
+      const [avdiaStats, setAvdiaStats]     = useState(true);
+      const searchRef = useRef(null);
+
+      // ────── Load from Firebase ──────────────────────────────────────────────────────────
+      useEffect(() => {
+        if (!IS_CONFIGURED) { setLoadStatus("loaded"); return; }
+        db.collection("configs").doc(FIRESTORE_DOC).get()
+          .then(doc => {
+            if (doc.exists) {
+              const data = doc.data();
+              const teams = (data.teams || []).map(t => {
+                // Backward-compat: old docs used sport:"football", new uses "soccer"
+                const sport    = normalizeSport(t.sport);
+                const leagueId = t.leagueId || findLeagueIdByName(t.league, sport) || "";
+                return makeKey(t.name, sport, leagueId);
+              });
+              setSelectedTeams(new Set(teams));
+              if (data.avdija_stats !== undefined) setAvdiaStats(data.avdija_stats);
+            }
+            setLoadStatus("loaded");
+          })
+          .catch(() => setLoadStatus("error"));
+      }, []);
+
+      // ────── Toggle a team ──────────────────────────────────────────────────────────────
+      const toggleTeam = useCallback((name, sport, leagueId) => {
+        setSelectedTeams(prev => {
+          const next = new Set(prev);
+          const k = makeKey(name, sport, leagueId);
+          next.has(k) ? next.delete(k) : next.add(k);
+          return next;
+        });
+        setHasUnsaved(true);
+        setSaveStatus("idle");
+        setShowSavedBanner(false);
+      }, []);
+
+      // ────── Toggle Avdija stats (auto-saves immediately) ────────────────────────────
+      const toggleAvdiaStats = useCallback(async () => {
+        const newVal = !avdiaStats;
+        setAvdiaStats(newVal);
+        if (!IS_CONFIGURED) return;
+        try {
+          await db.collection("configs").doc(FIRESTORE_DOC).update({
+            avdija_stats: newVal
+          });
+        } catch {
+          setAvdiaStats(!newVal); // revert on error
+        }
+      }, [avdiaStats]);
+
+      // ────── Save to Firebase ──────────────────────────────────────────────────────────
+      const handleSave = async () => {
+        if (!IS_CONFIGURED || saveStatus === "saving") return;
+        setSaveStatus("saving");
+        const teams = [...selectedTeams].map(key => {
+          const { name, sport, leagueId } = parseKey(key);
+          const league = findLeagueById(leagueId, sport);
+          return { name, sport, leagueId, league: league?.name || "" };
+        });
+        try {
+          await db.collection("configs").doc(FIRESTORE_DOC).set({
+            reminder_email:        REMINDER_EMAIL,
+            timezone_offset_hours: TIMEZONE_OFFSET,
+            teams,
+            avdija_stats:          avdiaStats,
+            updatedAt: new Date().toISOString()
+          });
+          setSaveStatus("saved");
+          setHasUnsaved(false);
+          setShowSavedBanner(true);
+          setTimeout(() => setSaveStatus("idle"), 2500);
+        } catch {
+          setSaveStatus("error");
+        }
+      };
+
+      // ────── Filter leagues by search ────────────────────────────────────────────────────
+      const filteredLeagues = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        return DATA[sport].leagues.map(league => ({
+          ...league,
+          _filtered: q ? league.teams.filter(t => t.toLowerCase().includes(q)) : null
+        }));
+      }, [sport, searchQuery]);
+
+      const hasSearchResults = filteredLeagues.some(l => !l._filtered || l._filtered.length > 0);
+
+      if (!IS_CONFIGURED) return <SetupScreen />;
+
+      const { accent } = DATA[sport];
+
+      return (
+        <div className="min-h-screen bg-gray-50 pb-8">
+
+          {/* ────── Sticky Header ────── */}
+          <header className="bg-slate-900 sticky top-0 z-20 shadow-xl">
+            <div className="max-w-lg mx-auto px-4 pt-4 pb-3 space-y-3">
+
+              {/* Title row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🏟️</span>
+                  <h1 className="text-white font-bold text-lg tracking-tight">Sports Reminder</h1>
+                  {selectedTeams.size > 0 && (
+                    <span className="bg-slate-700 text-slate-300 text-xs font-semibold px-2 py-0.5 rounded-full">
+                      {selectedTeams.size}
+                    </span>
+                  )}
+                </div>
+                <button onClick={handleSave}
+                  disabled={saveStatus === "saving" || !hasUnsaved}
+                  className={`px-4 py-1.5 rounded-xl text-sm font-semibold transition-all ${
+                    saveStatus === "saved"
+                      ? "bg-emerald-500 text-white"
+                      : saveStatus === "error"
+                      ? "bg-red-500 text-white"
+                      : saveStatus === "saving"
+                      ? "bg-slate-600 text-slate-400 cursor-not-allowed"
+                      : hasUnsaved
+                      ? "bg-blue-500 hover:bg-blue-400 text-white"
+                      : "bg-slate-700 text-slate-500 cursor-not-allowed"
+                  }`}>
+                  {saveStatus === "saving" ? "Saving…"
+                    : saveStatus === "saved" ? "✓ Saved"
+                    : saveStatus === "error" ? "⚠ Error"
+                    : "Save"}
+                </button>
+              </div>
+
+              {/* Sport toggle */}
+              <SportToggle sport={sport} onChange={s => { setSport(s); setSearchQuery(""); }} />
+            </div>
+          </header>
+
+          {/* ────── Main Content ────── */}
+          <main className="max-w-lg mx-auto px-4 pt-4 space-y-3">
+
+            {loadStatus === "loading" && (
+              <div className="text-center py-20 text-gray-400 text-sm">Loading your teams…</div>
+            )}
+
+            {loadStatus === "error" && (
+              <div className="text-center py-20 text-red-400 text-sm">
+                Could not load data. Check your Firebase config.
+              </div>
+            )}
+
+            {loadStatus === "loaded" && (
+              <>
+                {/* ────── Saved confirmation banner ────── */}
+                {showSavedBanner && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-start gap-3">
+                    <span className="text-lg leading-none mt-0.5">✅</span>
+                    <p className="text-sm text-emerald-800 leading-relaxed">
+                      <span className="font-semibold">Preferences saved!</span>{" "}
+                      You'll receive a reminder at <span className="font-semibold">9:00 AM</span> on
+                      days you have a match, sent to{" "}
+                      <span className="font-semibold">{REMINDER_EMAIL}</span>.
+                    </p>
+                  </div>
+                )}
+
+                {/* My Teams */}
+                <div>
+                  <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1 mb-2">
+                    My Teams
+                  </h2>
+                  <MyTeamsPanel selectedTeams={selectedTeams} onRemove={toggleTeam}
+                    avdiaStats={avdiaStats} onToggleAvdiaStats={toggleAvdiaStats} />
+                </div>
+
+                {/* Search */}
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+                  <input ref={searchRef} type="search" placeholder="Search teams…"
+                    value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                    className={`w-full pl-9 pr-10 py-3 bg-white border border-gray-200 rounded-xl text-sm
+                      focus:outline-none focus:ring-2 ${accent.ring} focus:border-transparent
+                      placeholder:text-gray-400`} />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery("")}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg font-light">
+                      ×
+                    </button>
+                  )}
+                </div>
+
+                {/* Leagues */}
+                <div>
+                  <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1 mb-2">
+                    {DATA[sport].emoji} {DATA[sport].label} Leagues
+                  </h2>
+                  {!hasSearchResults ? (
+                    <div className="text-center py-10 text-gray-400 text-sm">
+                      No teams found for "{searchQuery}"
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredLeagues.map(league => (
+                        <LeagueSection key={league.id} league={league} sport={sport}
+                          selectedTeams={selectedTeams} onToggle={toggleTeam}
+                          forceOpen={!!searchQuery && (!league._filtered || league._filtered.length > 0)} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
