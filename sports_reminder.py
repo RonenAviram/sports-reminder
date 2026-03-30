@@ -58,9 +58,9 @@ def _berlin_utc_offset_h(at_utc: datetime.datetime) -> int:
     cest_end   = datetime.datetime(y, 10, _last_weekday(y, 10, 6), 1, 0)  # Sun→01:00 UTC
     return 2 if cest_start <= at_utc < cest_end else 1
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # CONFIG — edit these before first run
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 FIREBASE_PROJECT   = "sports-reminder-55578"
 FIREBASE_API_KEY   = "AIzaSyCd3C1_XN69r8lWUBYPndoGFxmDjnsjX1E"
 FIRESTORE_DOC      = "ronen"          # the doc under configs/
@@ -70,10 +70,10 @@ GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")   # set env var or
 
 TIMEZONE_OFFSET    = 3    # Israel (UTC+3)
 
-# ───────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # PLAYER WATCH — stats for specific players, shown in the morning email
 # Each entry: display_name, espn_id, team_id (ESPN), team_name, league_id
-# ───────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 PLAYER_WATCH = [
     {
         "display_name": "Deni Avdija",
@@ -84,9 +84,9 @@ PLAYER_WATCH = [
     },
 ]
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # ESPN ENDPOINTS  (league_id → URL)
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 ESPN_ENDPOINTS = {
     "premier_league":       "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
     "la_liga":              "https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/scoreboard",
@@ -103,11 +103,11 @@ ESPN_ENDPOINTS = {
     "israeli_pl_basketball": None,    # uses TheSportsDB (ESPN returns empty for isr.1 basketball)
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # THESPORTSDB — Israeli leagues (ESPN isr.1 returns only partial team list)
 # Free key "3" covers eventsday + eventsseason.
 # Basketball ID=4474, Soccer ID=4644 (Israeli Premier League / Ligat HaAl)
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 TSDB_LEAGUES = {
     "israeli_pl_basketball": "Israeli Basketball Premier League",
     "israeli_pl_soccer":     "Israeli Premier League",
@@ -119,24 +119,24 @@ TSDB_LEAGUE_IDS = {
 TSDB_SEASON = "2025-2026"
 TSDB_FREE_KEY = "3"
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # EUROLEAGUE / EUROCUP OFFICIAL API
 # ESPN dropped these — use api-live.euroleague.net instead
 # Competition codes: E = EuroLeague, U = EuroCup
 # Season codes: E2025 = 2025-26 EuroLeague, U2025 = 2025-26 EuroCup
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 EUROLEAGUE_COMPETITION_CODES = {
     "euroleague": ("E", "E2025"),
     "eurocup":    ("U", "U2025"),
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # TEAM NAME MATCHING
 # Three-layer approach:
 #   1. NOISE_TOKENS  — strip known sponsor words before comparing
 #   2. Word-coverage — all words of user's name appear in API name (multi-word)
 #   3. ALIASES       — last resort for abbreviations that can't be solved algorithmically
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 
 # Sponsor / filler words that APIs inject into team names.
 # These are NEVER part of a team's actual identity — safe to ignore.
@@ -177,7 +177,7 @@ TEAM_ALIASES = {
     "Spurs":                       "Tottenham Hotspur",
     "Nottm Forest":                "Nottingham Forest",
     "Inter":                       "Inter Milan",
-    # ESPN drops/changes prefixes or Uses short name
+    # ESPN drops/changes prefixes or uses short name
     "Barcelona":                   "FC Barcelona",
     "Porto":                       "FC Porto",
     "Bologna":                     "Bologna FC",
@@ -251,7 +251,7 @@ TEAM_ALIASES = {
     "Union Saint-Gilloise":        "Union Saint-Gilloise",
     "Pafos FC":                    "Pafos FC",
     "Qarabag":                     "Qarabag",
-    "Kai2at Almaty":               "Kairat Almaty",
+    "Kairat Almaty":               "Kairat Almaty",
     "Villarreal CF":               "Villarreal CF",
     "Red Bull Salzburg":           "Red Bull Salzburg",
     "Eintracht Frankfurt":         "Eintracht Frankfurt",
@@ -264,9 +264,9 @@ TEAM_ALIASES = {
     "Nashville SC":                "Nashville SC",
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # HELPERS
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 def strip_accents(s: str) -> str:
     """Remove accents: Atlético → Atletico"""
     return "".join(
@@ -368,13 +368,13 @@ def today_israel() -> str:
     israel_now = utc_now + datetime.timedelta(hours=_israel_utc_offset_h(utc_now))
     return israel_now.strftime("%Y-%m-%d")
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # FIREBASE  — read user's tracked teams
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 def load_tracked_teams(doc_id: str, enabled_only: bool = True) -> list[dict]:
     """
     Returns list of dicts: [{name, sport, leagueId, league, enabled}, ...]
-    Uses Firebase REST API — so SDK needed.
+    Uses Firebase REST API — no SDK needed.
 
     enabled_only=True  → skip teams where enabled=false (for dry-run / real send)
     enabled_only=False → return ALL teams regardless of enabled flag (for validation)
@@ -413,9 +413,26 @@ def load_tracked_teams(doc_id: str, enabled_only: bool = True) -> list[dict]:
         })
     return teams
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ESPN  — fetch today's games per league
-# ───────────────────────────────────────────��────────────────────────────────
+
+def load_avdija_stats_flag(doc_id: str) -> bool:
+    """Returns True if Avdija stats email is enabled (default: True if field absent)."""
+    url = (
+        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
+        f"/databases/(default)/documents/configs/{doc_id}"
+        f"?key={FIREBASE_API_KEY}"
+    )
+    try:
+        data = fetch_json(url)
+    except Exception:
+        return True  # default to enabled on error
+    avdija_field = data.get("fields", {}).get("avdija_stats", {})
+    if "booleanValue" in avdija_field:
+        return bool(avdija_field["booleanValue"])
+    return True  # absent = enabled
+
+
+# ──────────────────────────────────────────────────────────────────────────────────# ESPN  — fetch today's games per league
+# ──────────────────────────────────────────────────────────────────────────────────
 def fetch_todays_games(league_id: str, today: str) -> list[dict]:
     """Returns list of game dicts for today."""
     # Route EuroLeague / EuroCup to the official API
@@ -472,9 +489,9 @@ def fetch_todays_games(league_id: str, today: str) -> list[dict]:
         })
     return games
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # EUROLEAGUE OFFICIAL API — fetch today's games
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 def fetch_euroleague_games(league_id: str, today: str) -> list[dict]:
     """
     Fetch today's games from the official EuroLeague/EuroCup API.
@@ -550,9 +567,9 @@ def fetch_euroleague_games(league_id: str, today: str) -> list[dict]:
         })
     return games
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # THESPORTSDB — Israeli Basketball Premier League
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 def fetch_tsdb_games(league_id: str, today: str) -> list[dict]:
     """Fetch today's games from TheSportsDB for leagues in TSDB_LEAGUES."""
     league_name = TSDB_LEAGUES.get(league_id)
@@ -612,9 +629,9 @@ def _all_teams_from_tsdb(league_id: str) -> list[str]:
                 seen.add(name)
     return sorted(seen)
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # VALIDATION — check every tracked team can be found in its league's API
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 def _all_teams_from_euroleague(league_id: str) -> list[str]:
     """Fetch every team name from the full season schedule."""
     _, season_code = EUROLEAGUE_COMPETITION_CODES[league_id]
@@ -629,7 +646,7 @@ def _all_teams_from_euroleague(league_id: str) -> list[str]:
         with urllib.request.urlopen(req, timeout=20) as r:
             xml_data = r.read()
     except Exception as e:
-        return [f"__ERROR_]{e}"]
+        return [f"__ERROR__{e}"]
     try:
         root = ET.fromstring(xml_data)
     except Exception as e:
@@ -730,9 +747,9 @@ def validate_teams(tracked: list[dict]) -> list[dict]:
             })
     return results
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # FIRESTORE WRITE — disable teams that fail validation
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 def disable_failing_teams(doc_id: str) -> dict:
     """
     Re-enable ALL teams, then run fresh validation and disable only those
@@ -805,9 +822,9 @@ def disable_failing_teams(doc_id: str) -> dict:
     return {"disabled": disabled_names, "reenabled": reenabled, "total": len(disabled_names), "error": None}
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # MATCHING — find which of your teams play today
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 def find_my_matches(tracked: list[dict], today: str) -> list[dict]:
     """Cross-reference tracked teams with today's ESPN schedule."""
     # Group tracked teams by leagueId
@@ -845,10 +862,9 @@ def find_my_matches(tracked: list[dict], today: str) -> list[dict]:
     matches.sort(key=lambda m: m["time"])
     return matches
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ───────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # PLAYER STATS — fetch last completed game stats for a watched player
-# ───────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 def fetch_player_last_game_stats(player: dict) -> dict | None:
     """
     Find the most recent completed NBA game for the player's team (checking
@@ -944,8 +960,9 @@ def fetch_player_last_game_stats(player: dict) -> dict | None:
     return None
 
 
+# ──────────────────────────────────────────────────────────────────────────────────
 # EMAIL
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 def build_email_html(matches: list[dict], today: str, player_stats: list[dict] | None = None) -> str:
     sport_emoji = {"soccer": "⚽", "basketball": "🏀"}
     rows = ""
@@ -965,7 +982,6 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
             <div style="font-size:12px; color:#999;">Israel time</div>
           </td>
         </tr>"""
-
 
     # Build player stats HTML block
     player_stats_html = ""
@@ -1022,7 +1038,7 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
             </tr>
           </table>
           <div style="font-size:12px; color:#64748b; border-top:1px solid #bfdbfe; padding-top:6px;">
-            FG {ps['fg']} &nbsp;·&nbsp; 3PT {ps['three_pt']} &nbsp;·&nbsp; FT {ps['ft']}
+            FG {ps['fg'].replace('-','/')} &nbsp;·&nbsp; 3PT {ps['three_pt'].replace('-','/')} &nbsp;·&nbsp; FT {ps['ft'].replace('-','/')}
             &nbsp;·&nbsp; {ps['stl']} STL &nbsp;·&nbsp; {ps['blk']} BLK
             &nbsp;·&nbsp; {ps['to']} TO &nbsp;·&nbsp; {ps['pf']} PF
           </div>
@@ -1112,9 +1128,9 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
         print(f"❌  Email failed: {e}")
         return False
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 # MAIN
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────
 MOCK_TEAMS = [
     {"name": "Hapoel Tel Aviv",  "sport": "basketball", "leagueId": "euroleague",        "league": "EuroLeague"},
     {"name": "Maccabi Tel Aviv", "sport": "basketball", "leagueId": "euroleague",        "league": "EuroLeague"},
@@ -1144,7 +1160,7 @@ def main():
     print("=" * 50)
 
     if mock_mode:
-        print("\n🧪 MOCK MODE — using fake teams & games (no network calls)\n")
+        print("\n🦎 MOCK MODE — using fake teams & games (no network calls)\n")
         tracked = MOCK_TEAMS
         matches = MOCK_MATCHES
         print(f"   Tracked teams ({len(tracked)}):")
@@ -1169,8 +1185,12 @@ def main():
             print("\n   Run with --mock --send to actually send it.")
         return
 
-    # ── Stats-only mode (post-game email, 07:00 IL) ─────────────────────────────────────
+    # ────── Stats-only mode (post-game email, 07:00 IL) ──────────────────────────────
     if stats_only:
+        avdija_enabled = load_avdija_stats_flag(FIRESTORE_DOC)
+        if not avdija_enabled:
+            print("\n📊 Avdija stats disabled in user settings → skipping stats email.")
+            return
         print("\n📊 Stats-only mode — fetching last game stats...")
         player_stats = []
         for p in PLAYER_WATCH:
@@ -1206,20 +1226,27 @@ def main():
     print(f"\n🔍 Checking ESPN for today's games...")
     matches = find_my_matches(tracked, today)
 
-    # 3. Fetch player stats (skipped when --no-stats)
+    # 3. Fetch player stats (skipped when --no-stats or flag disabled in Firestore)
     player_stats = []
     if no_stats:
-        print(f"\n📊 Skipping player stats (--no-stats mode).")
+    print(f"\n📊 Skipping player stats (--no-stats mode).")
+        watch_list = []
     else:
-        print(f"\n📊 Fetching player stats...")
-    for p in ([] if no_stats else PLAYER_WATCH):
+        avdija_enabled = load_avdija_stats_flag(FIRESTORE_DOC)
+        if avdija_enabled:
+            print(f"\n📊 Fetching player stats...")
+            watch_list = PLAYER_WATCH
+        else:
+            print(f"\n📊 Avdija stats disabled in user settings — skipping.")
+            watch_list = []
+    for p in watch_list:
         ps = fetch_player_last_game_stats(p)
         if ps:
             label = "לא שיחק" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
             print(f"   🏀 {ps['player_name']}: {label} ({ps['game_date_il']})")
             player_stats.append(ps)
         else:
-            print(f"   ⚠️  {p['display_name']}: לא נמצא משחק אחרון")
+            print(f"   ⚠️  {p['display_name']}: לא נמצאה משחק אחרון")
 
     # 4. Show results
     if not matches:
