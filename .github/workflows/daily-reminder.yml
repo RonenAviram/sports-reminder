@@ -2,8 +2,9 @@ name: Daily Sports Reminder
 
 on:
   schedule:
-    - cron: '0 6 * * *'   # 06:00 UTC = 09:00 Israel קיץ (IDT) / 08:00 Israel חורף (IST)
-  workflow_dispatch:       # הרצה ידנית מ-GitHub בלחיצת כפתור
+    - cron: '0 6 * * *'   # 09:00 Israel — morning games email
+    - cron: '0 4 * * *'   # 07:00 Israel — post-game player stats
+  workflow_dispatch:       # manual trigger (runs morning flow)
 
 jobs:
   send-reminder:
@@ -18,7 +19,14 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Send daily reminder
+      - name: Morning games reminder
+        if: github.event.schedule == '0 6 * * *' || github.event_name == 'workflow_dispatch'
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: python3 sports_reminder.py --send
+        run: python3 sports_reminder.py --send --no-stats
+
+      - name: Post-game player stats
+        if: github.event.schedule == '0 4 * * *'
+        env:
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python3 sports_reminder.py --send --stats-only
