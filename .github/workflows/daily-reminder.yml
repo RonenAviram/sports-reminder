@@ -4,7 +4,12 @@ on:
   schedule:
     - cron: '0 6 * * *'   # 09:00 Israel — morning games email
     - cron: '0 4 * * *'   # 07:00 Israel — post-game player stats
-  workflow_dispatch:       # manual trigger (runs morning flow)
+  workflow_dispatch:
+    inputs:
+      flow:
+        description: 'Which flow to run: morning | stats | both'
+        required: false
+        default: 'both'
 
 jobs:
   send-reminder:
@@ -20,13 +25,19 @@ jobs:
           python-version: '3.11'
 
       - name: Morning games reminder
-        if: github.event.schedule == '0 6 * * *' || github.event_name == 'workflow_dispatch'
+        if: >
+          github.event.schedule == '0 6 * * *' ||
+          (github.event_name == 'workflow_dispatch' &&
+           (github.event.inputs.flow == 'morning' || github.event.inputs.flow == 'both'))
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python3 sports_reminder.py --send --no-stats
 
       - name: Post-game player stats
-        if: github.event.schedule == '0 4 * * *'
+        if: >
+          github.event.schedule == '0 4 * * *' ||
+          (github.event_name == 'workflow_dispatch' &&
+           (github.event.inputs.flow == 'stats' || github.event.inputs.flow == 'both'))
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python3 sports_reminder.py --send --stats-only
