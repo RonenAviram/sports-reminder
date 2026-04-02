@@ -1060,12 +1060,10 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
           <p style="color:#94a3b8; margin:4px 0 0; font-size:13px;">{date_formatted}</p>
         </div>
         <div style="padding:16px 24px 8px;">
-          <p style="color:#374151; margin:0 0 16px; font-size:14px;">
-            You have <strong>{len(matches)} {'match' if len(matches)==1 else 'matches'}</strong> today:
-          </p>
-          <table style="width:100%; border-collapse:collapse;">
-            {rows}
-          </table>
+          {''.join([
+            f'<p style="color:#374151; margin:0 0 16px; font-size:14px;">You have <strong>{len(matches)} {"match" if len(matches)==1 else "matches"}</strong> today:</p>',
+            f'<table style="width:100%; border-collapse:collapse;">{rows}</table>'
+          ]) if matches else ''}
           {player_stats_html}
         </div>
         <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
@@ -1086,7 +1084,15 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
 
     _dt2 = datetime.datetime.strptime(today, "%Y-%m-%d")
     date_str = _dt2.strftime("%b ") + str(_dt2.day)
-    subject  = f"🏟️ {len(matches)} match{'es' if len(matches)!=1 else ''} today — {date_str}"
+    if not matches and player_stats:
+        ps = player_stats[0]
+        if ps.get("dnp"):
+            subject = f"🏀 {ps['player_name']} — DNP — {ps['game_date_il']}"
+        else:
+            result = "W" if ps["won"] else "L"
+            subject = f"🏀 {ps['player_name']} — {ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast ({result}) — {ps['game_date_il']}"
+    else:
+        subject  = f"🏟️ {len(matches)} match{'es' if len(matches)!=1 else ''} today — {date_str}"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
