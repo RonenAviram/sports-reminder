@@ -275,7 +275,7 @@ def strip_accents(s: str) -> str:
     )
 
 def normalize_name(name: str) -> str:
-   """Lowercase, strip accents, replace hyphens, remove common prefixes."""
+    """Lowercase, strip accents, replace hyphens, remove common prefixes."""
     name = strip_accents(name).lower().strip()
     name = name.replace("-", "").replace("'", "")
     for prefix in ["fc", "afc", "as", "rc", "ac", "sc", "vfb ", "vfl", "fsv "]:
