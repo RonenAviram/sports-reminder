@@ -177,7 +177,7 @@ TEAM_ALIASES = {
     "Spurs":                       "Tottenham Hotspur",
     "Nottm Forest":                "Nottingham Forest",
     "Inter":                       "Inter Milan",
-    # ESPN drops changes prefixes or uses short name
+    # ESPN drops/changes prefixes or uses short name
     "Barcelona":                   "FC Barcelona",
     "Porto":                       "FC Porto",
     "Bologna":                     "Bologna FC",
@@ -219,8 +219,8 @@ TEAM_ALIASES = {
     # EuroLeague / EuroCup
     "Zalgiris Kaunas":             "Zalgiris",
     "Crvena zvezda":               "Crvena Zvezda",
-    "AS Monaco":                   "Monaco Basket",       # EuroLeague basketball
-    "AS MONACO":                    "Monaco Basket",        # uppercase variant from API
+    "AS Monaco":                   "Monaco Basket",        # EuroLeague basketball
+    "AS MONACO":                   "Monaco Basket",        # uppercase variant from API
     "EA7 Emporio Armani Milan":    "Olimpia Milano",       # full sponsor name → common name
     "EA7 EMPORIO ARMANI MILAN":    "Olimpia Milano",       # uppercase variant from API
     "Armani Milan":                "Olimpia Milano",
@@ -261,7 +261,7 @@ TEAM_ALIASES = {
     "Los Angeles Clippers":        "LA Clippers",
     # MLS
     "Los Angeles FC":              "Los Angeles FC",
-    "Nashvťlle SC":         "Nashville SC",
+    "Nashville SC":                "Nashville SC",
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -277,8 +277,8 @@ def strip_accents(s: str) -> str:
 def normalize_name(name: str) -> str:
     """Lowercase, strip accents, replace hyphens, remove common prefixes."""
     name = strip_accents(name).lower().strip()
-    name = name.replace("-", "").replace("'", "")
-    for prefix in ["fc", "afc", "as", "rc", "ac", "sc", "vfb ", "vfl", "fsv "]:
+    name = name.replace("-", " ").replace("'", "")
+    for prefix in ["fc ", "afc ", "as ", "rc ", "ac ", "sc ", "vfb ", "vfl ", "fsv "]:
         if name.startswith(prefix):
             name = name[len(prefix):]
     for suffix in [" fc", " sc", " ac", " bc", " b.c."]:
@@ -294,14 +294,14 @@ def strip_noise(name: str) -> str:
     )
 
 def names_match(api_name: str, our_name: str) -> bool:
-   """
+    """
     Match an API team name against the user's stored name.
     Layers (first match wins):
-      1. Alias table — handles abbreviations (Man City → Manchester City)
-      2. Exact norm  — handles accents, FC/AS prefixes
-      3. Word-subset — handles sponsor insertions (Maccabi Rapyd Tel Aviv → Maccabi Tel Aviv)
-      4. Noise-strip + word-subset — handles sponsor at start/end for short names
-      5. Noise-strip + single-word — "Panathinaikos" matches "Panathinaikos Aktor Athens"
+      1. Alias table  — handles abbreviations (Man City → Manchester City)
+      2. Exact norm   — handles accents, FC/AS prefixes
+      3. Word-subset  — handles sponsor insertions (Maccabi Rapyd Tel Aviv → Maccabi Tel Aviv)
+      4. Noise-strip + word-subset  — handles sponsor at start/end for short names
+      5. Noise-strip + single-word  — "Panathinaikos" matches "Panathinaikos Aktor Athens"
     """
     # 1. Alias table (case-insensitive key lookup)
     resolved = TEAM_ALIASES.get(api_name) or TEAM_ALIASES.get(api_name.title()) or api_name
@@ -648,7 +648,7 @@ def _all_teams_from_euroleague(league_id: str) -> list[str]:
     try:
         root = ET.fromstring(xml_data)
     except Exception as e:
-        return [f"__ERROR__{e}"]
+        return [f"__ERROR_]{e}"]
     seen = set()
     for item in root.findall("item"):
         for field in ("hometeam", "awayteam"):
