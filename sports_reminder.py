@@ -377,7 +377,7 @@ def load_tracked_teams(doc_id: str, enabled_only: bool = True) -> list[dict]:
     Uses Firebase REST API — no SDK needed.
 
     enabled_only=True  → skip teams where enabled=false (for dry-run / real send)
-    enabled_only=False → return ALL teams regardless of enabled flag (for validation)
+    enabled_only=False → return ALL teams regardless of enabled flag (for balidation)
     If a team has no "enabled" field it is treated as enabled=True.
     """
     url = (
@@ -546,10 +546,12 @@ def fetch_euroleague_games(league_id: str, today: str) -> list[dict]:
         # schedules uses <startime>; results used <time>
         time_raw = (game.findtext("startime") or game.findtext("time") or "").strip()
 
-        # Convert UTC → Israel time (EuroLeague API returns startime in UTC)
+        # Convert CET/CEST (Berlin) → Israel time (EuroLeague API returns startime in CET)
         try:
             t = datetime.datetime.strptime(time_raw, "%H:%M")
-            game_utc = datetime.datetime.combine(game_dt, t.time())
+            game_berlin = datetime.datetime.combine(game_dt, t.time())
+            berlin_offset = _berlin_utc_offset_h(game_berlin)
+            game_utc = game_berlin - datetime.timedelta(hours=berlin_offset)
             il_offset = _israel_utc_offset_h(game_utc)
             game_israel = game_utc + datetime.timedelta(hours=il_offset)
             time_str = game_israel.strftime("%H:%M")
@@ -648,7 +650,7 @@ def _all_teams_from_euroleague(league_id: str) -> list[str]:
     try:
         root = ET.fromstring(xml_data)
     except Exception as e:
-        return [f"__ERROR_]{e}"]
+        return [f"__ERROR__{e}"]
     seen = set()
     for item in root.findall("item"):
         for field in ("hometeam", "awayteam"):
@@ -976,7 +978,9 @@ def _gcal_url(match: dict, today: str) -> str | None:
         utc_end   = utc_start + datetime.timedelta(hours=2)
         start_s = utc_start.strftime("%Y%m%dT%H%M%SZ")
         end_s   = utc_end.strftime("%Y%m%dT%H%M%SZ")
-        title   = urllib.parse.quote(f"{match['away']} Vs {match['home']}")
+        sport_emoji_map = {"soccer": "⚽", "basketball": "🏀"}
+        s_emoji = sport_emoji_map.get(match.get("sport", ""), "🏟️")
+        title   = urllib.parse.quote(f"{s_emoji} {match['away']} Vs {match['home']}")
         details = urllib.parse.quote(match.get("league_name", ""))
         return (
             f"https://calendar.google.com/calendar/render"
@@ -1233,10 +1237,10 @@ def main():
             ps = fetch_player_last_game_stats(p)
             if ps:
                 label = "DNP" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
-                print(f"  #🏀 {p['display_name']}: {label} ({ps['game_date_il']})")
+                print(f"   🏀 {p['display_name']}: {label} ({ps['game_date_il']})")
                 player_stats.append(ps)
             else:
-                print(f"  #⚠️  {p['display_name']}: no recent game found")
+                print(f"   ⚠️  {p['display_name']}: no recent game found")
         if send_mode:
             if player_stats:
                 print(f"\n📧 Sending stats email to {GMAIL_SENDER}...")
@@ -1279,10 +1283,10 @@ def main():
         ps = fetch_player_last_game_stats(p)
         if ps:
             label = "לא שיחק" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
-            print(f"  #🏀 {ps['player_name']}: {label} ({ps['game_date_il']})")
+            print(f"   🏀 {ps['player_name']}: {label} ({ps['game_date_il']})")
             player_stats.append(ps)
         else:
-            print(f"  #⚠️  {p['display_name']}: לא נמצא משחק אחרון")
+            print(f"   ⚠️  {p['display_name']}: לא נמצא משחק אחרון")
 
     # 4. Show results
     if not matches:
