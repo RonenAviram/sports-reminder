@@ -453,9 +453,13 @@ def fetch_todays_games(league_id: str, today: str) -> list[dict]:
         return []
 
     games = []
+    tomorrow_utc = (datetime.datetime.strptime(today, "%Y-%m-%d") + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
     for event in data.get("events", []):
         game_date = event.get("date", "")[:10]
-        if game_date != today:
+        if league_id == "nba":
+            if game_date not in (today, tomorrow_utc):
+                continue
+        elif game_date != today:
             continue
         comp = event.get("competitions", [{}])[0]
         competitors = comp.get("competitors", [])
