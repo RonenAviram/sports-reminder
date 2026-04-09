@@ -446,11 +446,24 @@ def fetch_todays_games(league_id: str, today: str) -> list[dict]:
     url = ESPN_ENDPOINTS.get(league_id)
     if not url:
         return []
-    try:
-        data = fetch_json(url)
-    except Exception as e:
-        print(f"  ⚠️  ESPN fetch failed for {league_id}: {e}")
-        return []
+
+    # NBA: fetch both today and tomorrow explicitly to catch overnight games (e.g. 10pm ET = 05:00 IL next day)
+    if league_id == "nba":
+        tomorrow = (datetime.datetime.strptime(today, "%Y-%m-%d") + datetime.timedelta(days=1)).strftime("%Y%m%d")
+        today_fmt = today.replace("-", "")
+        all_events = []
+        for dated_url in [f"{url}?dates={today_fmt}", f"{url}?dates={tomorrow}"]:
+            try:
+                all_events.extend(fetch_json(dated_url).get("events", []))
+            except Exception as e:
+                print(f"  ⚠️  ESPN fetch failed for {league_id}: {e}")
+        data = {"events": all_events}
+    else:
+        try:
+            data = fetch_json(url)
+        except Exception as e:
+            print(f"  ⚠️  ESPN fetch failed for {league_id}: {e}")
+            return []
 
     games = []
     tomorrow_utc = (datetime.datetime.strptime(today, "%Y-%m-%d") + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
