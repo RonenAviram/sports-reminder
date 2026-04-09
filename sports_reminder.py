@@ -431,6 +431,23 @@ def load_avdija_stats_flag(doc_id: str) -> bool:
     return True  # absent = enabled
 
 
+def load_weekly_digest_flag(doc_id: str) -> bool:
+    """Returns True if weekly digest email is enabled (default: False — opt-in feature)."""
+    url = (
+        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
+        f"/databases/(default)/documents/configs/{doc_id}"
+        f"?key={FIREBASE_API_KEY}"
+    )
+    try:
+        data = fetch_json(url)
+    except Exception:
+        return False
+    field = data.get("fields", {}).get("weekly_digest", {})
+    if "booleanValue" in field:
+        return bool(field["booleanValue"])
+    return False  # absent = disabled
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ESPN  — fetch today's games per league
 # ─────────────────────────────────────────────────────────────────────────────
@@ -879,6 +896,29 @@ def find_my_matches(tracked: list[dict], today: str) -> list[dict]:
     matches.sort(key=lambda m: m["time"])
     return matches
 
+
+def find_week_matches(tracked: list[dict], start_date: str) -> dict:
+    """Fetch matches for 7 days starting from start_date (parallel).
+    Returns dict: date_str -> list[match], sorted by date, only days with matches."""
+    import concurrent.futures
+    dates = [
+        (datetime.datetime.strptime(start_date, "%Y-%m-%d") + datetime.timedelta(days=i)).strftime("%Y-%m-%d")
+        for i in range(7)
+    ]
+    results = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=7) as executor:
+        future_to_date = {executor.submit(find_my_matches, tracked, d): d for d in dates}
+        for future in concurrent.futures.as_completed(future_to_date):
+            d = future_to_date[future]
+            try:
+                matches = future.result()
+                if matches:
+                    results[d] = matches
+            except Exception as e:
+                print(f"  ⚠️  Week fetch failed for {d}: {e}")
+    return dict(sorted(results.items()))
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # PLAYER STATS — fetch last completed game stats for a watched player
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1186,6 +1226,127 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
         return False
 
 # ─────────────────────────────────────────────────────────────────────────────
+# WEEKLY DIGEST — helper, HTML builder, sender
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _week_label(start_date: str) -> str:
+    """Returns e.g. 'Apr 12–18' or 'Apr 28 – May 4'."""
+    start = datetime.datetime.strptime(start_date, "%Y-%m-%d")
+    end   = start + datetime.timedelta(days=6)
+    if start.month == end.month:
+        return f"{start.strftime('%b')} {start.day}–{end.day}"
+    return f"{start.strftime('%b')} {start.day} – {end.strftime('%b')} {end.day}"
+
+
+def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
+    week_lbl    = _week_label(start_date)
+    sport_emoji = {"soccer": "⚽", "basketball": "🏀"}
+
+    if not matches_by_day:
+        body_html = """
+        <div style="padding:32px 24px; text-align:center; color:#6b7280; font-size:14px;">
+          No matches this week for your teams. Enjoy the break! ⚽🏀
+        </div>"""
+    else:
+        days_html = ""
+        for date_str, matches in matches_by_day.items():
+            dt        = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+            day_label = dt.strftime("%A, %b ") + str(dt.day)
+            rows      = ""
+            for m in matches:
+                emoji    = sport_emoji.get(m["sport"], "🏟️")
+                gcal     = _gcal_url(m, date_str)
+                gcal_html = (
+                    f'<div style="margin-top:4px;">'
+                    f'<a href="{gcal}" style="font-size:11px; color:#1a56db; text-decoration:none;">📅 Add to Calendar</a>'
+                    f'</div>'
+                ) if gcal else ""
+                rows += f"""
+                <tr>
+                  <td style="padding:10px 12px; font-size:15px; border-bottom:1px solid #f0f0f0; width:32px;">{emoji}</td>
+                  <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0;">
+                    <div style="font-weight:600; color:#111;">{m['away']} @ {m['home']}</div>
+                    <div style="font-size:12px; color:#666; margin-top:2px;">{m['league_name']}</div>
+                    {gcal_html}
+                  </td>
+                  <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0; text-align:right; white-space:nowrap;">
+                    <span style="font-weight:600; color:#1a56db;">{m['time']}</span>
+                  </td>
+                </tr>"""
+            days_html += f"""
+            <div>
+              <div style="padding:8px 16px; font-size:11px; font-weight:700; color:#6b7280;
+                          text-transform:uppercase; letter-spacing:0.06em;
+                          background:#f8fafc; border-top:1px solid #e5e7eb;">{day_label}</div>
+              <table style="width:100%; border-collapse:collapse;">{rows}</table>
+            </div>"""
+        body_html = f'<div>{days_html}</div>'
+
+    return f"""
+    <html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+                       background:#f8fafc; margin:0; padding:20px;">
+      <div style="max-width:520px; margin:0 auto; background:white; border-radius:16px;
+                  overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+        <div style="background:#0f172a; padding:20px 24px;">
+          <div style="font-size:22px; margin-bottom:4px;">🗓️</div>
+          <h1 style="color:white; margin:0; font-size:18px; font-weight:700;">Week Ahead</h1>
+          <p style="color:#94a3b8; margin:4px 0 0; font-size:13px;">{week_lbl} · Israel time</p>
+        </div>
+        {body_html}
+        <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
+          <a href="https://sports-reminder-ui.vercel.app"
+             style="font-size:12px; color:#6b7280; text-decoration:none;">
+            ✏️ Edit your teams at sports-reminder-ui.vercel.app
+          </a>
+        </div>
+      </div>
+    </body></html>
+    """
+
+
+def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
+    if not GMAIL_APP_PASSWORD:
+        print("❌  GMAIL_APP_PASSWORD not set.")
+        return False
+
+    week_lbl = _week_label(start_date)
+    total    = sum(len(v) for v in matches_by_day.values())
+    subject  = f"🗓️ No games this week — {week_lbl}" if total == 0 \
+               else f"🗓️ Week ahead — {week_lbl}"
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"]    = GMAIL_SENDER
+    msg["To"]      = to
+
+    if total == 0:
+        plain = f"No matches this week for your teams. Enjoy the break! ⚽🏀\n\nEdit your teams: https://sports-reminder-ui.vercel.app"
+    else:
+        plain = f"Your week ahead — {week_lbl} (Israel time)\n\n"
+        for date_str, matches in matches_by_day.items():
+            dt     = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+            plain += f"{dt.strftime('%A, %b')} {dt.day}\n"
+            for m in matches:
+                icon = "🏀" if m["sport"] == "basketball" else "⚽"
+                plain += f"  {icon}  {m['away']} @ {m['home']}  —  {m['league_name']}  —  {m['time']}\n"
+            plain += "\n"
+        plain += f"Edit your teams: https://sports-reminder-ui.vercel.app"
+
+    msg.attach(MIMEText(plain, "plain"))
+    msg.attach(MIMEText(build_weekly_email_html(matches_by_day, start_date), "html"))
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
+            server.sendmail(GMAIL_SENDER, to, msg.as_string())
+        print(f"✅  Weekly email sent to {to}")
+        return True
+    except Exception as e:
+        print(f"❌  Weekly email failed: {e}")
+        return False
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────────────────────────────────────
 MOCK_TEAMS = [
@@ -1206,11 +1367,12 @@ MOCK_MATCHES = [
 
 def main():
     args           = sys.argv[1:]
-    send_mode      = "--send" in args
-    test_mode      = "--test" in args
-    mock_mode      = "--mock" in args
-    stats_only     = "--stats-only" in args   # 07:00 IL — post-game stats only
-    no_stats       = "--no-stats"  in args   # 09:00 IL — morning games only
+    send_mode      = "--send"        in args
+    test_mode      = "--test"        in args
+    mock_mode      = "--mock"        in args
+    stats_only     = "--stats-only"  in args   # 07:00 IL — post-game stats only
+    no_stats       = "--no-stats"    in args   # 09:00 IL — morning games only
+    weekly_mode    = "--weekly"      in args   # Saturday 22:00 IL — weekly digest
     today          = today_israel()
 
     print(f"\n🗓️  Sports Reminder — {today}")
@@ -1240,6 +1402,34 @@ def main():
             print(f"📄 Email HTML preview saved to: {out_path}")
             print("   Open it in a browser to see how the email looks.")
             print("\n   Run with --mock --send to actually send it.")
+        return
+
+    # ── Weekly digest mode (Saturday night, 22:00 IL) ───────────────────────
+    if weekly_mode:
+        weekly_enabled = load_weekly_digest_flag(FIRESTORE_DOC)
+        if not weekly_enabled and not test_mode:
+            print("\n📅 Weekly digest disabled in user settings → skipping.")
+            return
+        print(f"\n📅 Weekly digest mode — fetching 7 days from {today}...")
+        tracked = load_tracked_teams(FIRESTORE_DOC)
+        if not tracked:
+            print("   No tracked teams found.")
+            return
+        print(f"   Found {len(tracked)} tracked team(s).")
+        matches_by_day = find_week_matches(tracked, today)
+        total = sum(len(v) for v in matches_by_day.values())
+        print(f"\n🗓️  {total} match(es) found across {len(matches_by_day)} day(s):")
+        for date_str, day_matches in matches_by_day.items():
+            dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+            print(f"\n  {dt.strftime('%A, %b')} {dt.day}:")
+            for m in day_matches:
+                icon = "🏀" if m["sport"] == "basketball" else "⚽"
+                print(f"    {icon}  {m['away']} @ {m['home']}  —  {m['league_name']}  —  {m['time']}")
+        if send_mode:
+            print(f"\n📧 Sending weekly email to {GMAIL_SENDER}...")
+            send_weekly_email(GMAIL_SENDER, matches_by_day, today)
+        else:
+            print("\nℹ️  Dry-run. Add --send to send the weekly digest.")
         return
 
     # ── Stats-only mode (post-game email, 07:00 IL) ─────────────────────────
