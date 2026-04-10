@@ -501,11 +501,12 @@ def fetch_todays_games(league_id: str, today: str) -> list[dict]:
 
         # Try to get game time in Israel timezone (DST-aware)
         game_utc_dt = None
+        game_local  = None
         try:
             game_utc_dt = datetime.datetime.strptime(event["date"], "%Y-%m-%dT%H:%MZ")
-            il_offset = _israel_utc_offset_h(game_utc_dt)
-            game_local = game_utc_dt + datetime.timedelta(hours=il_offset)
-            time_str = game_local.strftime("%H:%M")
+            il_offset   = _israel_utc_offset_h(game_utc_dt)
+            game_local  = game_utc_dt + datetime.timedelta(hours=il_offset)
+            time_str    = game_local.strftime("%H:%M")
         except Exception:
             time_str = "TBD"
 
@@ -515,10 +516,12 @@ def fetch_todays_games(league_id: str, today: str) -> list[dict]:
             if game_utc_dt < now_utc or game_utc_dt > now_utc + datetime.timedelta(hours=24):
                 continue
 
+        il_date = game_local.strftime("%Y-%m-%d") if game_local else today
         games.append({
             "home":      home["team"]["displayName"],
             "away":      away["team"]["displayName"],
             "time":      time_str,
+            "il_date":   il_date,
             "status":    comp.get("status", {}).get("type", {}).get("description", ""),
             "league_id": league_id,
         })
@@ -899,23 +902,80 @@ def find_my_matches(tracked: list[dict], today: str) -> list[dict]:
 
 def find_week_matches(tracked: list[dict], start_date: str) -> dict:
     """Fetch matches for 7 days starting from start_date (parallel).
+    Games are bucketed by their *Israel date* (il_date), not the ESPN query date.
+    This ensures NBA overnight games appear on the correct Israel day.
     Returns dict: date_str -> list[match], sorted by date, only days with matches."""
     import concurrent.futures
-    dates = [
-        (datetime.datetime.strptime(start_date, "%Y-%m-%d") + datetime.timedelta(days=i)).strftime("%Y-%m-%d")
-        for i in range(7)
+
+    start_dt = datetime.datetime.strptime(start_date, "%Y-%m-%d")
+    end_date  = (start_dt + datetime.timedelta(days=6)).strftime("%Y-%m-%d")
+
+    # Query ESPN dates from (start_date - 1) through (start_date + 6).
+    # The extra day-before catches NBA late-night US games whose Israel date = start_date.
+    espn_dates = [
+        (start_dt + datetime.timedelta(days=i)).strftime("%Y-%m-%d")
+        for i in range(-1, 7)   # 8 ESPN dates total
     ]
-    results = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=7) as executor:
-        future_to_date = {executor.submit(find_my_matches, tracked, d): d for d in dates}
-        for future in concurrent.futures.as_completed(future_to_date):
-            d = future_to_date[future]
+
+    leagues_needed = set(t["leagueId"] for t in tracked)
+
+    def fetch_for_espn_date(date_str: str) -> list[dict]:
+        """Fetch all tracked-team matches for one ESPN date in weekly mode."""
+        games_by_league: dict[str, list] = {}
+        for lid in leagues_needed:
+            if lid in ESPN_ENDPOINTS or lid in EUROLEAGUE_COMPETITION_CODES or lid in TSDB_LEAGUES:
+                games_by_league[lid] = fetch_todays_games(lid, date_str, weekly_mode=True)
+
+        matches = []
+        seen_local: set = set()
+        for tracked_team in tracked:
+            lid   = tracked_team["leagueId"]
+            games = games_by_league.get(lid, [])
+            for game in games:
+                # EuroLeague / TSDB games may not carry il_date — use the query date
+                if "il_date" not in game:
+                    game["il_date"] = date_str
+                game_key = f"{game['home']}_{game['away']}_{lid}"
+                if game_key in seen_local:
+                    continue
+                if names_match(game["home"], tracked_team["name"]) or \
+                   names_match(game["away"], tracked_team["name"]):
+                    matches.append({
+                        **game,
+                        "tracked_team": tracked_team["name"],
+                        "league_name":  tracked_team.get("league") or lid,
+                        "sport":        tracked_team["sport"],
+                    })
+                    seen_local.add(game_key)
+        return matches
+
+    # Run all ESPN-date fetches in parallel
+    all_matches: list[dict] = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {executor.submit(fetch_for_espn_date, d): d for d in espn_dates}
+        for future in concurrent.futures.as_completed(futures):
             try:
-                matches = future.result()
-                if matches:
-                    results[d] = matches
+                all_matches.extend(future.result())
             except Exception as e:
-                print(f"  ⚠️  Week fetch failed for {d}: {e}")
+                print(f"  \u26a0\ufe0f  Week fetch failed: {e}")
+
+    # Re-bucket by Israel date; deduplicate globally; keep only [start_date, end_date]
+    results: dict[str, list] = {}
+    seen_global: set = set()
+    for match in all_matches:
+        il_date  = match.get("il_date", start_date)
+        if il_date < start_date or il_date > end_date:
+            continue
+        game_key = f"{match['home']}_{match['away']}_{match['league_id']}"
+        if game_key in seen_global:
+            continue
+        seen_global.add(game_key)
+        results.setdefault(il_date, []).append(match)
+
+    # Sort matches within each day by time
+    for day_matches in results.values():
+        day_matches.sort(key=lambda m: m["time"])
+
     return dict(sorted(results.items()))
 
 
@@ -1289,7 +1349,7 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
                   overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08);">
         <div style="background:#0f172a; padding:20px 24px;">
           <div style="font-size:22px; margin-bottom:4px;">🗓️</div>
-          <h1 style="color:white; margin:0; font-size:18px; font-weight:700;">Week Ahead</h1>
+          <h1 style="color:white; margin:0; font-size:18px; font-weight:700;">Upcoming Matches</h1>
           <p style="color:#94a3b8; margin:4px 0 0; font-size:13px;">{week_lbl} · Israel time</p>
         </div>
         {body_html}
@@ -1311,8 +1371,8 @@ def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
 
     week_lbl = _week_label(start_date)
     total    = sum(len(v) for v in matches_by_day.values())
-    subject  = f"🗓️ No games this week — {week_lbl}" if total == 0 \
-               else f"🗓️ Week ahead — {week_lbl}"
+    subject  = f"🗓️ No upcoming matches — {week_lbl}" if total == 0 \
+               else f"🗓️ Upcoming matches — {week_lbl}"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
@@ -1322,7 +1382,7 @@ def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
     if total == 0:
         plain = f"No matches this week for your teams. Enjoy the break! ⚽🏀\n\nEdit your teams: https://sports-reminder-ui.vercel.app"
     else:
-        plain = f"Your week ahead — {week_lbl} (Israel time)\n\n"
+        plain = f"Upcoming matches — {week_lbl} (Israel time)\n\n"
         for date_str, matches in matches_by_day.items():
             dt     = datetime.datetime.strptime(date_str, "%Y-%m-%d")
             plain += f"{dt.strftime('%A, %b')} {dt.day}\n"
