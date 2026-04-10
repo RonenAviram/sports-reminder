@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: '0 6 * * *'   # 09:00 Israel — morning games email
     - cron: '0 4 * * *'   # 07:00 Israel — post-game player stats
-    - cron: '0 19 * * 6'  # 22:00 Israel Saturday — weekly digest
+    - cron: '0 17 * * 6'  # 20:00 Israel Saturday — weekly digest
   workflow_dispatch:
     inputs:
       flow:
@@ -45,7 +45,7 @@ jobs:
 
       - name: Weekly digest
         if: >
-          github.event.schedule == '0 19 * * 6' ||
+          github.event.schedule == '0 17 * * 6' ||
           (github.event_name == 'workflow_dispatch' &&
            github.event.inputs.flow == 'weekly')
         env:
