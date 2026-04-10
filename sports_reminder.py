@@ -477,7 +477,7 @@ def fetch_todays_games(league_id: str, today: str) -> list[dict]:
         data = {"events": all_events}
     else:
         try:
-            data = fetch_json(url)
+            data = fetch_json(f"{url}?dates={today.replace('-', '')}")
         except Exception as e:
             print(f"  ⚠️  ESPN fetch failed for {league_id}: {e}")
             return []
