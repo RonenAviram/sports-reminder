@@ -43,8 +43,8 @@ def _israel_utc_offset_h(at_utc: datetime.datetime) -> int:
         aware = at_utc.replace(tzinfo=datetime.timezone.utc).astimezone(_ISRAEL_TZ)
         return int(aware.utcoffset().total_seconds() // 3600)
     y = at_utc.year
-    dst_start = datetime.datetime(y, 3, _last_weekday(y, 3, 4), 0, 0)   # FriÃ¢ÂÂ00:00 UTC
-    dst_end   = datetime.datetime(y, 10, _last_weekday(y, 10, 6), 1, 0)  # SunÃ¢ÂÂ01:00 UTC
+    dst_start = datetime.datetime(y, 3, _last_weekday(y, 3, 4), 0, 0)   # Fri→00:00 UTC
+    dst_end   = datetime.datetime(y, 10, _last_weekday(y, 10, 6), 1, 0)  # Sun→01:00 UTC
     return 3 if dst_start <= at_utc < dst_end else 2
 
 def _berlin_utc_offset_h(at_utc: datetime.datetime) -> int:
@@ -54,13 +54,13 @@ def _berlin_utc_offset_h(at_utc: datetime.datetime) -> int:
         aware = at_utc.replace(tzinfo=datetime.timezone.utc).astimezone(_BERLIN_TZ)
         return int(aware.utcoffset().total_seconds() // 3600)
     y = at_utc.year
-    cest_start = datetime.datetime(y, 3, _last_weekday(y, 3, 6), 1, 0)   # SunÃ¢ÂÂ01:00 UTC
-    cest_end   = datetime.datetime(y, 10, _last_weekday(y, 10, 6), 1, 0)  # SunÃ¢ÂÂ01:00 UTC
+    cest_start = datetime.datetime(y, 3, _last_weekday(y, 3, 6), 1, 0)   # Sun→01:00 UTC
+    cest_end   = datetime.datetime(y, 10, _last_weekday(y, 10, 6), 1, 0)  # Sun→01:00 UTC
     return 2 if cest_start <= at_utc < cest_end else 1
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-# CONFIG Ã¢ÂÂ edit these before first run
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIG — edit these before first run
+# ─────────────────────────────────────────────────────────────────────────────
 FIREBASE_PROJECT   = "sports-reminder-55578"
 FIREBASE_API_KEY   = "AIzaSyCd3C1_XN69r8lWUBYPndoGFxmDjnsjX1E"
 FIRESTORE_DOC      = "ronen"          # the doc under configs/
@@ -70,10 +70,10 @@ GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")   # set env var or
 
 TIMEZONE_OFFSET    = 3    # Israel (UTC+3)
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-# PLAYER WATCH Ã¢ÂÂ stats for specific players, shown in the morning email
+# ─────────────────────────────────────────────────────────────────────────────
+# PLAYER WATCH — stats for specific players, shown in the morning email
 # Each entry: display_name, espn_id, team_id (ESPN), team_name, league_id
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
 PLAYER_WATCH = [
     {
         "display_name": "Deni Avdija",
@@ -84,9 +84,9 @@ PLAYER_WATCH = [
     },
 ]
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-# ESPN ENDPOINTS  (league_id Ã¢ÂÂ URL)
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
+# ESPN ENDPOINTS  (league_id → URL)
+# ─────────────────────────────────────────────────────────────────────────────
 ESPN_ENDPOINTS = {
     "premier_league":       "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
     "la_liga":              "https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/scoreboard",
@@ -103,11 +103,11 @@ ESPN_ENDPOINTS = {
     "israeli_pl_basketball": None,    # uses TheSportsDB (ESPN returns empty for isr.1 basketball)
 }
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-# THESPORTSDB Ã¢ÂÂ Israeli leagues (ESPN isr.1 returns only partial team list)
+# ─────────────────────────────────────────────────────────────────────────────
+# THESPORTSDB — Israeli leagues (ESPN isr.1 returns only partial team list)
 # Free key "3" covers eventsday + eventsseason.
 # Basketball ID=4474, Soccer ID=4644 (Israeli Premier League / Ligat HaAl)
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
 TSDB_LEAGUES = {
     "israeli_pl_basketball": "Israeli Basketball Premier League",
     "israeli_pl_soccer":     "Israeli Premier League",
@@ -119,27 +119,27 @@ TSDB_LEAGUE_IDS = {
 TSDB_SEASON = "2025-2026"
 TSDB_FREE_KEY = "3"
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
 # EUROLEAGUE / EUROCUP OFFICIAL API
-# ESPN dropped these Ã¢ÂÂ use api-live.euroleague.net instead
+# ESPN dropped these — use api-live.euroleague.net instead
 # Competition codes: E = EuroLeague, U = EuroCup
 # Season codes: E2025 = 2025-26 EuroLeague, U2025 = 2025-26 EuroCup
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
 EUROLEAGUE_COMPETITION_CODES = {
     "euroleague": ("E", "E2025"),
     "eurocup":    ("U", "U2025"),
 }
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
 # TEAM NAME MATCHING
 # Three-layer approach:
-#   1. NOISE_TOKENS  Ã¢ÂÂ strip known sponsor words before comparing
-#   2. Word-coverage Ã¢ÂÂ all words of user's name appear in API name (multi-word)
-#   3. ALIASES       Ã¢ÂÂ last resort for abbreviations that can't be solved algorithmically
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+#   1. NOISE_TOKENS  — strip known sponsor words before comparing
+#   2. Word-coverage — all words of user's name appear in API name (multi-word)
+#   3. ALIASES       — last resort for abbreviations that can't be solved algorithmically
+# ─────────────────────────────────────────────────────────────────────────────
 
 # Sponsor / filler words that APIs inject into team names.
-# These are NEVER part of a team's actual identity Ã¢ÂÂ safe to ignore.
+# These are NEVER part of a team's actual identity — safe to ignore.
 NOISE_TOKENS = {
     # EuroLeague / EuroCup jersey sponsors (updated each season as needed)
     "rapyd",        # Maccabi Rapyd Tel Aviv
@@ -184,10 +184,10 @@ TEAM_ALIASES = {
     "Milan":                       "AC Milan",
     "Lazio":                       "SS Lazio",
     "Atletico Madrid":             "Atletico Madrid",
-    "AtlÃÂ©tico Madrid":             "Atletico Madrid",
+    "Atlético Madrid":             "Atletico Madrid",
     "Hoffenheim":                  "TSG Hoffenheim",
     "RB Leipzig":                  "RB Leipzig",
-    "KÃÂ¶ln":                        "FC Koln",
+    "Köln":                        "FC Koln",
     "Koln":                        "FC Koln",
     "Valencia":                    "Valencia CF",
     "Sevilla":                     "Sevilla FC",
@@ -195,14 +195,14 @@ TEAM_ALIASES = {
     "Espanyol":                    "RCD Espanyol",
     "Osasuna":                     "CA Osasuna",
     "Alaves":                      "Deportivo Alaves",
-    "AlavÃÂ©s":                      "Deportivo Alaves",
+    "Alavés":                      "Deportivo Alaves",
     "Paris Saint-Germain":         "Paris Saint-Germain",  # identity, resolves accent issues
     "PSG":                         "Paris Saint-Germain",
     "Lens":                        "Lens",                 # identity
     "Rennes":                      "Rennes",
     "Brentford":                   "Brentford",
     "Bournemouth":                 "Bournemouth",
-    # Israeli teams Ã¢ÂÂ ESPN uses hyphens / apostrophes
+    # Israeli teams — ESPN uses hyphens / apostrophes
     "Maccabi Tel-Aviv":            "Maccabi Tel Aviv",
     "Hapoel Tel-Aviv":             "Hapoel Tel Aviv",
     "Hapoel Be'er":                "Hapoel Beer Sheva",    # ESPN truncates
@@ -221,26 +221,26 @@ TEAM_ALIASES = {
     "Crvena zvezda":               "Crvena Zvezda",
     "AS Monaco":                   "Monaco Basket",        # EuroLeague basketball
     "AS MONACO":                   "Monaco Basket",        # uppercase variant from API
-    "EA7 Emporio Armani Milan":    "Olimpia Milano",       # full sponsor name Ã¢ÂÂ common name
+    "EA7 Emporio Armani Milan":    "Olimpia Milano",       # full sponsor name → common name
     "EA7 EMPORIO ARMANI MILAN":    "Olimpia Milano",       # uppercase variant from API
     "Armani Milan":                "Olimpia Milano",
     "Olimpia Milano":              "Olimpia Milano",       # identity
     "Baskonia Vitoria-Gasteiz":    "Baskonia",
-    "LDLC ASVEL VILLEURBANNE":     "ASVEL",                # EuroCup Ã¢ÂÂ ASVEL is 5 chars, below threshold
+    "LDLC ASVEL VILLEURBANNE":     "ASVEL",                # EuroCup — ASVEL is 5 chars, below threshold
     "LDLC ASVEL Villeurbanne":     "ASVEL",
     # ESPN uses Italian name for Inter
     "Internazionale":              "Inter Milan",
     "FC Internazionale":           "Inter Milan",
     "FC Internazionale Milano":    "Inter Milan",
-    # Rennes Ã¢ÂÂ ESPN uses full French name
+    # Rennes — ESPN uses full French name
     "Stade Rennais":               "Rennes",
     "Stade Rennais FC":            "Rennes",
     # MLS abbreviation
     "LAFC":                        "Los Angeles FC",
-    # Red Bull Salzburg Ã¢ÂÂ ESPN sometimes uses RB abbreviation
+    # Red Bull Salzburg — ESPN sometimes uses RB abbreviation
     "RB Salzburg":                 "Red Bull Salzburg",
     "FC Red Bull Salzburg":        "Red Bull Salzburg",
-    # Champions League / Europa League Ã¢ÂÂ ESPN sometimes uses shorter names
+    # Champions League / Europa League — ESPN sometimes uses shorter names
     "Real Madrid CF":              "Real Madrid",
     "Inter Milan":                 "Inter Milan",
     "Borussia Dortmund":           "Borussia Dortmund",
@@ -256,7 +256,7 @@ TEAM_ALIASES = {
     "Red Bull Salzburg":           "Red Bull Salzburg",
     "Eintracht Frankfurt":         "Eintracht Frankfurt",
     "Fenerbahce":                  "Fenerbahce",           # Europa League (no Beko)
-    # NBA Ã¢ÂÂ "LA" abbreviation for Los Angeles teams
+    # NBA — "LA" abbreviation for Los Angeles teams
     "Los Angeles Lakers":          "LA Lakers",
     "Los Angeles Clippers":        "LA Clippers",
     # MLS
@@ -264,11 +264,11 @@ TEAM_ALIASES = {
     "Nashville SC":                "Nashville SC",
 }
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
 # HELPERS
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
 def strip_accents(s: str) -> str:
-    """Remove accents: AtlÃÂ©tico Ã¢ÂÂ Atletico"""
+    """Remove accents: Atlético → Atletico"""
     return "".join(
         c for c in unicodedata.normalize("NFD", s)
         if unicodedata.category(c) != "Mn"
@@ -297,11 +297,11 @@ def names_match(api_name: str, our_name: str) -> bool:
     """
     Match an API team name against the user's stored name.
     Layers (first match wins):
-      1. Alias table  Ã¢ÂÂ handles abbreviations (Man City Ã¢ÂÂ Manchester City)
-      2. Exact norm   Ã¢ÂÂ handles accents, FC/AS prefixes
-      3. Word-subset  Ã¢ÂÂ handles sponsor insertions (Maccabi Rapyd Tel Aviv Ã¢ÂÂ Maccabi Tel Aviv)
-      4. Noise-strip + word-subset  Ã¢ÂÂ handles sponsor at start/end for short names
-      5. Noise-strip + single-word  Ã¢ÂÂ "Panathinaikos" matches "Panathinaikos Aktor Athens"
+      1. Alias table  — handles abbreviations (Man City → Manchester City)
+      2. Exact norm   — handles accents, FC/AS prefixes
+      3. Word-subset  — handles sponsor insertions (Maccabi Rapyd Tel Aviv → Maccabi Tel Aviv)
+      4. Noise-strip + word-subset  — handles sponsor at start/end for short names
+      5. Noise-strip + single-word  — "Panathinaikos" matches "Panathinaikos Aktor Athens"
     """
     # 1. Alias table (case-insensitive key lookup)
     resolved = TEAM_ALIASES.get(api_name) or TEAM_ALIASES.get(api_name.title()) or api_name
@@ -338,9 +338,9 @@ def names_match(api_name: str, our_name: str) -> bool:
 
     # 5. Single significant word after noise stripping:
     #    user saves "Panathinaikos", API says "Panathinaikos Aktor Athens"
-    #    Ã¢ÂÂ after stripping "aktor": "panathinaikos athens"
-    #    Ã¢ÂÂ "panathinaikos" is the FIRST word Ã¢ÂÂ match
-    #    Require Ã¢ÂÂ¥6 chars to avoid false positives on city names like "Milan"
+    #    → after stripping "aktor": "panathinaikos athens"
+    #    → "panathinaikos" is the FIRST word → match
+    #    Require ≥6 chars to avoid false positives on city names like "Milan"
     clean_api_list = clean_api.split()
     if (len(clean_our_words) == 1
             and clean_api_list
@@ -368,16 +368,16 @@ def today_israel() -> str:
     israel_now = utc_now + datetime.timedelta(hours=_israel_utc_offset_h(utc_now))
     return israel_now.strftime("%Y-%m-%d")
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-# FIREBASE  Ã¢ÂÂ read user's tracked teams
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
+# FIREBASE  — read user's tracked teams
+# ─────────────────────────────────────────────────────────────────────────────
 def load_tracked_teams(doc_id: str, enabled_only: bool = True) -> list[dict]:
     """
     Returns list of dicts: [{name, sport, leagueId, league, enabled}, ...]
-    Uses Firebase REST API Ã¢ÂÂ no SDK needed.
+    Uses Firebase REST API — no SDK needed.
 
-    enabled_only=True  Ã¢ÂÂ skip teams where enabled=false (for dry-run / real send)
-    enabled_only=False Ã¢ÂÂ return ALL teams regardless of enabled flag (for balidation)
+    enabled_only=True  → skip teams where enabled=false (for dry-run / real send)
+    enabled_only=False → return ALL teams regardless of enabled flag (for validation)
     If a team has no "enabled" field it is treated as enabled=True.
     """
     url = (
@@ -388,7 +388,7 @@ def load_tracked_teams(doc_id: str, enabled_only: bool = True) -> list[dict]:
     try:
         data = fetch_json(url)
     except Exception as e:
-        print(f"Ã¢ÂÂ Ã¯Â¸Â  Could not read Firestore: {e}")
+        print(f"⚠️  Could not read Firestore: {e}")
         return []
 
     fields = data.get("fields", {})
@@ -432,7 +432,7 @@ def load_avdija_stats_flag(doc_id: str) -> bool:
 
 
 def load_weekly_digest_flag(doc_id: str) -> bool:
-    """Returns True if weekly digest email is enabled (default: False Ã¢ÂÂ opt-in feature)."""
+    """Returns True if weekly digest email is enabled (default: False — opt-in feature)."""
     url = (
         f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
         f"/databases/(default)/documents/configs/{doc_id}"
@@ -448,11 +448,12 @@ def load_weekly_digest_flag(doc_id: str) -> bool:
     return False  # absent = disabled
 
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-# ESPN  Ã¢ÂÂ fetch today's games per league
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-def fetch_todays_games(league_id: str, today: str) -> list[dict]:
-    """Returns list of game dicts for today."""
+# ─────────────────────────────────────────────────────────────────────────────
+# ESPN  — fetch today's games per league
+# ─────────────────────────────────────────────────────────────────────────────
+def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) -> list[dict]:
+    """Returns list of game dicts for today.
+    weekly_mode=True skips the NBA 24-hour filter and adds il_date to each game."""
     # Route EuroLeague / EuroCup to the official API
     if league_id in EUROLEAGUE_COMPETITION_CODES:
         return fetch_euroleague_games(league_id, today)
@@ -464,33 +465,39 @@ def fetch_todays_games(league_id: str, today: str) -> list[dict]:
     if not url:
         return []
 
-    # NBA: fetch both today and tomorrow explicitly to catch overnight games (e.g. 10pm ET = 05:00 IL next day)
+    # For NBA, query both today and tomorrow (UTC) to catch overnight games
     if league_id == "nba":
-        tomorrow = (datetime.datetime.strptime(today, "%Y-%m-%d") + datetime.timedelta(days=1)).strftime("%Y%m%d")
-        today_fmt = today.replace("-", "")
-        all_events = []
-        for dated_url in [f"{url}?dates={today_fmt}", f"{url}?dates={tomorrow}"]:
+        today_fmt    = today.replace("-", "")
+        tomorrow_utc = (datetime.datetime.strptime(today, "%Y-%m-%d")
+                        + datetime.timedelta(days=1)).strftime("%Y%m%d")
+        all_events: list = []
+        for dated_url in [f"{url}?dates={today_fmt}", f"{url}?dates={tomorrow_utc}"]:
             try:
                 all_events.extend(fetch_json(dated_url).get("events", []))
             except Exception as e:
-                print(f"  Ã¢ÂÂ Ã¯Â¸Â  ESPN fetch failed for {league_id}: {e}")
+                print(f"  ⚠️  ESPN fetch failed for {league_id}: {e}")
         data = {"events": all_events}
     else:
         try:
             data = fetch_json(f"{url}?dates={today.replace('-', '')}")
         except Exception as e:
-            print(f"  Ã¢ÂÂ Ã¯Â¸Â  ESPN fetch failed for {league_id}: {e}")
+            print(f"  ⚠️  ESPN fetch failed for {league_id}: {e}")
             return []
 
+    # tomorrow_utc string for date filtering (NBA only)
+    tomorrow_utc_str = (datetime.datetime.strptime(today, "%Y-%m-%d")
+                        + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+
     games = []
-    tomorrow_utc = (datetime.datetime.strptime(today, "%Y-%m-%d") + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
     for event in data.get("events", []):
         game_date = event.get("date", "")[:10]
         if league_id == "nba":
-            if game_date not in (today, tomorrow_utc):
+            if game_date != today and game_date != tomorrow_utc_str:
                 continue
-        elif game_date != today:
-            continue
+        else:
+            if game_date != today:
+                continue
+
         comp = event.get("competitions", [{}])[0]
         competitors = comp.get("competitors", [])
         if len(competitors) < 2:
@@ -510,13 +517,15 @@ def fetch_todays_games(league_id: str, today: str) -> list[dict]:
         except Exception:
             time_str = "TBD"
 
-        # NBA: only show games that start within the next 24 hours (skip past games)
-        if league_id == "nba" and game_utc_dt is not None:
+        # NBA: only show games within the next 24 hours (skip this filter in weekly_mode)
+        if league_id == "nba" and game_utc_dt is not None and not weekly_mode:
             now_utc = datetime.datetime.utcnow()
             if game_utc_dt < now_utc or game_utc_dt > now_utc + datetime.timedelta(hours=24):
                 continue
 
+        # Israel date of this game (used by weekly digest for correct bucketing)
         il_date = game_local.strftime("%Y-%m-%d") if game_local else today
+
         games.append({
             "home":      home["team"]["displayName"],
             "away":      away["team"]["displayName"],
@@ -527,17 +536,17 @@ def fetch_todays_games(league_id: str, today: str) -> list[dict]:
         })
     return games
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-# EUROLEAGUE OFFICIAL API Ã¢ÂÂ fetch today's games
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
+# EUROLEAGUE OFFICIAL API — fetch today's games
+# ─────────────────────────────────────────────────────────────────────────────
 def fetch_euroleague_games(league_id: str, today: str) -> list[dict]:
     """
     Fetch today's games from the official EuroLeague/EuroCup API.
     Returns XML with all season results; we filter to today's date.
-    Date format in XML: "Mar 24, 2026"  Ã¢ÂÂ  we compare with YYYY-MM-DD today.
+    Date format in XML: "Mar 24, 2026"  →  we compare with YYYY-MM-DD today.
     """
     _, season_code = EUROLEAGUE_COMPETITION_CODES[league_id]
-    # Use /schedules (not /results) Ã¢ÂÂ results only has played games; schedules has everything
+    # Use /schedules (not /results) — results only has played games; schedules has everything
     url = f"https://api-live.euroleague.net/v1/schedules?seasonCode={season_code}"
     try:
         req = urllib.request.Request(url, headers={
@@ -550,13 +559,13 @@ def fetch_euroleague_games(league_id: str, today: str) -> list[dict]:
         with urllib.request.urlopen(req, timeout=15) as r:
             xml_data = r.read()
     except Exception as e:
-        print(f"  Ã¢ÂÂ Ã¯Â¸Â  EuroLeague API fetch failed for {league_id}: {e}")
+        print(f"  ⚠️  EuroLeague API fetch failed for {league_id}: {e}")
         return []
 
     try:
         root = ET.fromstring(xml_data)
     except Exception as e:
-        print(f"  Ã¢ÂÂ Ã¯Â¸Â  EuroLeague XML parse error for {league_id}: {e}")
+        print(f"  ⚠️  EuroLeague XML parse error for {league_id}: {e}")
         return []
 
     # Parse today's date for comparison
@@ -583,7 +592,7 @@ def fetch_euroleague_games(league_id: str, today: str) -> list[dict]:
         # schedules uses <startime>; results used <time>
         time_raw = (game.findtext("startime") or game.findtext("time") or "").strip()
 
-        # Convert CET/CEST (Berlin) Ã¢ÂÂ Israel time (EuroLeague API returns startime in CET)
+        # Convert CET/CEST (Berlin) → Israel time (EuroLeague API returns startime in CET)
         try:
             t = datetime.datetime.strptime(time_raw, "%H:%M")
             game_berlin = datetime.datetime.combine(game_dt, t.time())
@@ -604,9 +613,9 @@ def fetch_euroleague_games(league_id: str, today: str) -> list[dict]:
         })
     return games
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-# THESPORTSDB Ã¢ÂÂ Israeli Basketball Premier League
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
+# THESPORTSDB — Israeli Basketball Premier League
+# ─────────────────────────────────────────────────────────────────────────────
 def fetch_tsdb_games(league_id: str, today: str) -> list[dict]:
     """Fetch today's games from TheSportsDB for leagues in TSDB_LEAGUES."""
     league_name = TSDB_LEAGUES.get(league_id)
@@ -617,7 +626,7 @@ def fetch_tsdb_games(league_id: str, today: str) -> list[dict]:
     try:
         data = fetch_json(url)
     except Exception as e:
-        print(f"  Ã¢ÂÂ Ã¯Â¸Â  TheSportsDB fetch failed for {league_id}: {e}")
+        print(f"  ⚠️  TheSportsDB fetch failed for {league_id}: {e}")
         return []
     events = data.get("events") or []
     games = []
@@ -647,7 +656,7 @@ def fetch_tsdb_games(league_id: str, today: str) -> list[dict]:
     return games
 
 def _all_teams_from_tsdb(league_id: str) -> list[str]:
-    """Fetch all team names from TheSportsDB season schedule (for validation)."""
+    """Fetch all team names from TheSportsDB season schedule (for Validation)."""
     lid = TSDB_LEAGUE_IDS.get(league_id)
     if not lid:
         return []
@@ -666,9 +675,9 @@ def _all_teams_from_tsdb(league_id: str) -> list[str]:
                 seen.add(name)
     return sorted(seen)
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-# VALIDATION Ã¢ÂÂ check every tracked team can be found in its league's API
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
+# VALIDATION — check every tracked team can be found in its league's API
+# ─────────────────────────────────────────────────────────────────────────────
 def _all_teams_from_euroleague(league_id: str) -> list[str]:
     """Fetch every team name from the full season schedule."""
     _, season_code = EUROLEAGUE_COMPETITION_CODES[league_id]
@@ -784,9 +793,9 @@ def validate_teams(tracked: list[dict]) -> list[dict]:
             })
     return results
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-# FIRESTORE WRITE Ã¢ÂÂ disable teams that fail validation
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
+# FIRESTORE WRITE — disable teams that fail validation
+# ─────────────────────────────────────────────────────────────────────────────
 def disable_failing_teams(doc_id: str) -> dict:
     """
     Re-enable ALL teams, then run fresh validation and disable only those
@@ -859,9 +868,9 @@ def disable_failing_teams(doc_id: str) -> dict:
     return {"disabled": disabled_names, "reenabled": reenabled, "total": len(disabled_names), "error": None}
 
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-# MATCHING Ã¢ÂÂ find which of your teams play today
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
+# MATCHING — find which of your teams play today
+# ─────────────────────────────────────────────────────────────────────────────
 def find_my_matches(tracked: list[dict], today: str) -> list[dict]:
     """Cross-reference tracked teams with today's ESPN schedule."""
     # Group tracked teams by leagueId
@@ -933,7 +942,7 @@ def find_week_matches(tracked: list[dict], start_date: str) -> dict:
             lid   = tracked_team["leagueId"]
             games = games_by_league.get(lid, [])
             for game in games:
-                # EuroLeague / TSDB games may not carry il_date Ã¢ÂÂ use the query date
+                # EuroLeague / TSDB games don't carry il_date — use the query date
                 if "il_date" not in game:
                     game["il_date"] = date_str
                 game_key = f"{game['home']}_{game['away']}_{lid}"
@@ -948,17 +957,19 @@ def find_week_matches(tracked: list[dict], start_date: str) -> dict:
                         "sport":        tracked_team["sport"],
                     })
                     seen_local.add(game_key)
+        print(f"    → {len(matches)} match(es)")
         return matches
 
-    # Run all ESPN-date fetches in parallel
+    # Fetch serially (one date at a time) with a pause between dates.
+    # Parallelism caused ESPN rate-limiting → all leagues returning [] silently.
     all_matches: list[dict] = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        futures = {executor.submit(fetch_for_espn_date, d): d for d in espn_dates}
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                all_matches.extend(future.result())
-            except Exception as e:
-                print(f"  \u26a0\ufe0f  Week fetch failed: {e}")
+    for i, d in enumerate(espn_dates):
+        try:
+            all_matches.extend(fetch_for_espn_date(d))
+        except Exception as e:
+            print(f"  ⚠️  Week fetch failed for {d}: {e}")
+        if i < len(espn_dates) - 1:
+            _time.sleep(1.0)  # 1s between dates to avoid ESPN rate limiting
 
     # Re-bucket by Israel date; deduplicate globally; keep only [start_date, end_date]
     results: dict[str, list] = {}
@@ -980,9 +991,9 @@ def find_week_matches(tracked: list[dict], start_date: str) -> dict:
     return dict(sorted(results.items()))
 
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-# PLAYER STATS Ã¢ÂÂ fetch last completed game stats for a watched player
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
+# PLAYER STATS — fetch last completed game stats for a watched player
+# ─────────────────────────────────────────────────────────────────────────────
 def fetch_player_last_game_stats(player: dict) -> dict | None:
     """
     Find the most recent completed NBA game for the player's team (checking
@@ -1078,9 +1089,9 @@ def fetch_player_last_game_stats(player: dict) -> dict | None:
     return None
 
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
 # EMAIL
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
 def _gcal_url(match: dict, today: str) -> str | None:
     """Build a Google Calendar 'add event' URL from a match dict + today's date string."""
     if match.get("time") in (None, "TBD", ""):
@@ -1096,8 +1107,8 @@ def _gcal_url(match: dict, today: str) -> str | None:
         utc_end   = utc_start + datetime.timedelta(hours=2)
         start_s = utc_start.strftime("%Y%m%dT%H%M%SZ")
         end_s   = utc_end.strftime("%Y%m%dT%H%M%SZ")
-        sport_emoji_map = {"soccer": "Ã¢ÂÂ½", "basketball": "Ã°ÂÂÂ"}
-        s_emoji = sport_emoji_map.get(match.get("sport", ""), "Ã°ÂÂÂÃ¯Â¸Â")
+        sport_emoji_map = {"soccer": "⚽", "basketball": "🏀"}
+        s_emoji = sport_emoji_map.get(match.get("sport", ""), "🏟️")
         title   = urllib.parse.quote(f"{s_emoji} {match['away']} Vs {match['home']}")
         details = urllib.parse.quote(match.get("league_name", ""))
         return (
@@ -1109,14 +1120,14 @@ def _gcal_url(match: dict, today: str) -> str | None:
 
 
 def build_email_html(matches: list[dict], today: str, player_stats: list[dict] | None = None) -> str:
-    sport_emoji = {"soccer": "Ã¢ÂÂ½", "basketball": "Ã°ÂÂÂ"}
+    sport_emoji = {"soccer": "⚽", "basketball": "🏀"}
     rows = ""
     for m in matches:
-        emoji = sport_emoji.get(m["sport"], "Ã°ÂÂÂÃ¯Â¸Â")
+        emoji = sport_emoji.get(m["sport"], "🏟️")
         gcal = _gcal_url(m, today)
         gcal_html = (
             f'<div style="margin-top:5px;">'
-            f'<a href="{gcal}" style="font-size:11px; color:#1a56db; text-decoration:none;">Ã°ÂÂÂ Add to Calendar</a>'
+            f'<a href="{gcal}" style="font-size:11px; color:#1a56db; text-decoration:none;">📅 Add to Calendar</a>'
             f'</div>'
         ) if gcal else ""
         rows += f"""
@@ -1143,7 +1154,7 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
         <div style="margin:16px 0 0; padding:12px 16px; background:#f8fafc;
                     border-radius:8px; border-left:3px solid #94a3b8;">
           <div style="font-size:13px; font-weight:600; color:#64748b;">
-            Ã°ÂÂÂ {ps['player_name']} | {ps['away']} @ {ps['home']} ({ps['game_date_il']})
+            🏀 {ps['player_name']} | {ps['away']} @ {ps['home']} ({ps['game_date_il']})
           </div>
           <div style="font-size:14px; color:#64748b; margin-top:4px;">Did Not Play (DNP)</div>
         </div>"""
@@ -1161,7 +1172,7 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
         <div style="margin:16px 0 0; padding:12px 16px; background:#eff6ff;
                     border-radius:8px; border-left:3px solid #1a56db;">
           <div style="font-size:13px; font-weight:600; color:#1a56db; margin-bottom:8px;">
-            Ã°ÂÂÂ {ps['player_name']} | {ps['away']} {ps['away_score']}Ã¢ÂÂ{ps['home_score']} {ps['home']}
+            🏀 {ps['player_name']} | {ps['away']} {ps['away_score']}–{ps['home_score']} {ps['home']}
             &nbsp;<span style="color:{result_color}; font-weight:700;">{result_text}</span>
             <span style="font-weight:400; color:#64748b;"> ({ps['game_date_il']})</span>
           </div>
@@ -1190,9 +1201,9 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
             </tr>
           </table>
           <div style="font-size:12px; color:#64748b; border-top:1px solid #bfdbfe; padding-top:6px;">
-            FG {ps['fg'].replace('-','/')} &nbsp;ÃÂ·&nbsp; 3PT {ps['three_pt'].replace('-','/')} &nbsp;ÃÂ·&nbsp; FT {ps['ft'].replace('-','/')}
-            &nbsp;ÃÂ·&nbsp; {ps['stl']} STL &nbsp;ÃÂ·&nbsp; {ps['blk']} BLK
-            &nbsp;ÃÂ·&nbsp; {ps['to']} TO &nbsp;ÃÂ·&nbsp; {ps['pf']} PF
+            FG {ps['fg'].replace('-','/')} &nbsp;·&nbsp; 3PT {ps['three_pt'].replace('-','/')} &nbsp;·&nbsp; FT {ps['ft'].replace('-','/')}
+            &nbsp;·&nbsp; {ps['stl']} STL &nbsp;·&nbsp; {ps['blk']} BLK
+            &nbsp;·&nbsp; {ps['to']} TO &nbsp;·&nbsp; {ps['pf']} PF
           </div>
         </div>"""
 
@@ -1204,7 +1215,7 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
       <div style="max-width:520px; margin:0 auto; background:white; border-radius:16px;
                   overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08);">
         <div style="background:#0f172a; padding:20px 24px;">
-          <div style="font-size:22px; margin-bottom:4px;">Ã°ÂÂÂÃ¯Â¸Â</div>
+          <div style="font-size:22px; margin-bottom:4px;">🏟️</div>
           <h1 style="color:white; margin:0; font-size:18px; font-weight:700;">
             Sports Reminder
           </h1>
@@ -1220,7 +1231,7 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
         <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
           <a href="https://sports-reminder-ui.vercel.app"
              style="font-size:12px; color:#6b7280; text-decoration:none;">
-            Ã¢ÂÂÃ¯Â¸Â Edit your teams at sports-reminder-ui.vercel.app
+            ✏️ Edit your teams at sports-reminder-ui.vercel.app
           </a>
         </div>
       </div>
@@ -1229,7 +1240,7 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
 
 def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict] | None = None):
     if not GMAIL_APP_PASSWORD:
-        print("Ã¢ÂÂ  GMAIL_APP_PASSWORD not set. Export it as an env variable:")
+        print("❌  GMAIL_APP_PASSWORD not set. Export it as an env variable:")
         print("    export GMAIL_APP_PASSWORD='xxxx xxxx xxxx xxxx'")
         return False
 
@@ -1238,12 +1249,12 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
     if not matches and player_stats:
         ps = player_stats[0]
         if ps.get("dnp"):
-            subject = f"Ã°ÂÂÂ {ps['player_name']} Ã¢ÂÂ DNP Ã¢ÂÂ {ps['game_date_il']}"
+            subject = f"🏀 {ps['player_name']} — DNP — {ps['game_date_il']}"
         else:
             result = "W" if ps["won"] else "L"
-            subject = f"Ã°ÂÂÂ {ps['player_name']} Ã¢ÂÂ {ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast ({result}) Ã¢ÂÂ {ps['game_date_il']}"
+            subject = f"🏀 {ps['player_name']} — {ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast ({result}) — {ps['game_date_il']}"
     else:
-        subject  = f"Ã°ÂÂÂÃ¯Â¸Â {len(matches)} match{'es' if len(matches)!=1 else ''} today Ã¢ÂÂ {date_str}"
+        subject  = f"🏟️ {len(matches)} match{'es' if len(matches)!=1 else ''} today — {date_str}"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
@@ -1253,24 +1264,24 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
     # Plain text fallback
     plain = f"Your matches for {date_str}:\n\n"
     for m in matches:
-        plain += f"  {m['away']} @ {m['home']}  Ã¢ÂÂ  {m['league_name']}  Ã¢ÂÂ  {m['time']} (IL)\n"
+        plain += f"  {m['away']} @ {m['home']}  —  {m['league_name']}  —  {m['time']} (IL)\n"
     if player_stats:
         plain += "\n---\n"
         for ps in player_stats:
             if ps.get("dnp"):
-                plain += f"\nÃ°ÂÂÂ {ps['player_name']} Did Not Play ({ps['game_date_il']})\n"
+                plain += f"\n🏀 {ps['player_name']} Did Not Play ({ps['game_date_il']})\n"
             else:
-                result = "ÃÂ ÃÂÃÂ¦ÃÂÃÂÃÂ" if ps["won"] else "ÃÂÃÂ¤ÃÂ¡ÃÂ"
+                result = "ניצחון" if ps["won"] else "הפסד"
                 pm_str = ps.get("plus_minus", "?")
                 try:
                     pm_str = f"+{pm_str}" if int(pm_str) > 0 else str(pm_str)
                 except (ValueError, TypeError):
                     pass
-                plain += (f"\nÃ°ÂÂÂ {ps['player_name']} | {ps['away']} {ps['away_score']}Ã¢ÂÂ{ps['home_score']} {ps['home']}"
+                plain += (f"\n🏀 {ps['player_name']} | {ps['away']} {ps['away_score']}–{ps['home_score']} {ps['home']}"
                           f" ({result}, {ps['game_date_il']})\n"
-                          f"   {ps['min']} min ÃÂ· {ps['pts']} pts ÃÂ· {ps['reb']} reb ÃÂ· {ps['ast']} ast ÃÂ· {pm_str}\n"
-                          f"   FG {ps['fg'].replace('-','/')} ÃÂ· 3PT {ps['three_pt'].replace('-','/')} ÃÂ· FT {ps['ft'].replace('-','/')}"
-                          f" ÃÂ· {ps['stl']} stl ÃÂ· {ps['blk']} blk ÃÂ· {ps['to']} to ÃÂ· {ps['pf']} pf\n")
+                          f"   {ps['min']} min · {ps['pts']} pts · {ps['reb']} reb · {ps['ast']} ast · {pm_str}\n"
+                          f"   FG {ps['fg'].replace('-','/')} · 3PT {ps['three_pt'].replace('-','/')} · FT {ps['ft'].replace('-','/')}"
+                          f" · {ps['stl']} stl · {ps['blk']} blk · {ps['to']} to · {ps['pf']} pf\n")
     plain += f"\nEdit your teams: https://sports-reminder-ui.vercel.app"
 
     msg.attach(MIMEText(plain, "plain"))
@@ -1280,33 +1291,33 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
             server.sendmail(GMAIL_SENDER, to, msg.as_string())
-        print(f"Ã¢ÂÂ  Email sent to {to}")
+        print(f"✅  Email sent to {to}")
         return True
     except Exception as e:
-        print(f"Ã¢ÂÂ  Email failed: {e}")
+        print(f"❌  Email failed: {e}")
         return False
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-# WEEKLY DIGEST Ã¢ÂÂ helper, HTML builder, sender
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
+# WEEKLY DIGEST — helper, HTML builder, sender
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _week_label(start_date: str) -> str:
-    """Returns e.g. 'Apr 12Ã¢ÂÂ18' or 'Apr 28 Ã¢ÂÂ May 4'."""
+    """Returns e.g. 'Apr 12–18' or 'Apr 28 – May 4'."""
     start = datetime.datetime.strptime(start_date, "%Y-%m-%d")
     end   = start + datetime.timedelta(days=6)
     if start.month == end.month:
-        return f"{start.strftime('%b')} {start.day}Ã¢ÂÂ{end.day}"
-    return f"{start.strftime('%b')} {start.day} Ã¢ÂÂ {end.strftime('%b')} {end.day}"
+        return f"{start.strftime('%b')} {start.day}–{end.day}"
+    return f"{start.strftime('%b')} {start.day} – {end.strftime('%b')} {end.day}"
 
 
 def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
     week_lbl    = _week_label(start_date)
-    sport_emoji = {"soccer": "Ã¢ÂÂ½", "basketball": "Ã°ÂÂÂ"}
+    sport_emoji = {"soccer": "⚽", "basketball": "🏀"}
 
     if not matches_by_day:
         body_html = """
         <div style="padding:32px 24px; text-align:center; color:#6b7280; font-size:14px;">
-          No matches this week for your teams. Enjoy the break! Ã¢ÂÂ½Ã°ÂÂÂ
+          No matches this week for your teams. Enjoy the break! ⚽🏀
         </div>"""
     else:
         days_html = ""
@@ -1315,11 +1326,11 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
             day_label = dt.strftime("%A, %b ") + str(dt.day)
             rows      = ""
             for m in matches:
-                emoji    = sport_emoji.get(m["sport"], "Ã°ÂÂÂÃ¯Â¸Â")
+                emoji    = sport_emoji.get(m["sport"], "🏟️")
                 gcal     = _gcal_url(m, date_str)
                 gcal_html = (
                     f'<div style="margin-top:4px;">'
-                    f'<a href="{gcal}" style="font-size:11px; color:#1a56db; text-decoration:none;">Ã°ÂÂÂ Add to Calendar</a>'
+                    f'<a href="{gcal}" style="font-size:11px; color:#1a56db; text-decoration:none;">📅 Add to Calendar</a>'
                     f'</div>'
                 ) if gcal else ""
                 rows += f"""
@@ -1349,15 +1360,15 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
       <div style="max-width:520px; margin:0 auto; background:white; border-radius:16px;
                   overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08);">
         <div style="background:#0f172a; padding:20px 24px;">
-          <div style="font-size:22px; margin-bottom:4px;">Ã°ÂÂÂÃ¯Â¸Â</div>
+          <div style="font-size:22px; margin-bottom:4px;">🗓️</div>
           <h1 style="color:white; margin:0; font-size:18px; font-weight:700;">Upcoming Matches</h1>
-          <p style="color:#94a3b8; margin:4px 0 0; font-size:13px;">{week_lbl} ÃÂ· Israel time</p>
+          <p style="color:#94a3b8; margin:4px 0 0; font-size:13px;">{week_lbl} · Israel time</p>
         </div>
         {body_html}
         <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
           <a href="https://sports-reminder-ui.vercel.app"
              style="font-size:12px; color:#6b7280; text-decoration:none;">
-            Ã¢ÂÂÃ¯Â¸Â Edit your teams at sports-reminder-ui.vercel.app
+            ✏️ Edit your teams at sports-reminder-ui.vercel.app
           </a>
         </div>
       </div>
@@ -1367,13 +1378,13 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
 
 def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
     if not GMAIL_APP_PASSWORD:
-        print("Ã¢ÂÂ  GMAIL_APP_PASSWORD not set.")
+        print("❌  GMAIL_APP_PASSWORD not set.")
         return False
 
     week_lbl = _week_label(start_date)
     total    = sum(len(v) for v in matches_by_day.values())
-    subject  = f"Ã°ÂÂÂÃ¯Â¸Â No upcoming matches Ã¢ÂÂ {week_lbl}" if total == 0 \
-               else f"Ã°ÂÂÂÃ¯Â¸Â Upcoming matches Ã¢ÂÂ {week_lbl}"
+    subject  = f"🗓️ No upcoming matches — {week_lbl}" if total == 0 \
+               else f"🗓️ Upcoming matches — {week_lbl}"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
@@ -1381,15 +1392,15 @@ def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
     msg["To"]      = to
 
     if total == 0:
-        plain = f"No matches this week for your teams. Enjoy the break! Ã¢ÂÂ½Ã°ÂÂÂ\n\nEdit your teams: https://sports-reminder-ui.vercel.app"
+        plain = f"No matches this week for your teams. Enjoy the break! ⚽🏀\n\nEdit your teams: https://sports-reminder-ui.vercel.app"
     else:
-        plain = f"Upcoming matches Ã¢ÂÂ {week_lbl} (Israel time)\n\n"
+        plain = f"Upcoming matches — {week_lbl} (Israel time)\n\n"
         for date_str, matches in matches_by_day.items():
             dt     = datetime.datetime.strptime(date_str, "%Y-%m-%d")
             plain += f"{dt.strftime('%A, %b')} {dt.day}\n"
             for m in matches:
-                icon = "Ã°ÂÂÂ" if m["sport"] == "basketball" else "Ã¢ÂÂ½"
-                plain += f"  {icon}  {m['away']} @ {m['home']}  Ã¢ÂÂ  {m['league_name']}  Ã¢ÂÂ  {m['time']}\n"
+                icon = "🏀" if m["sport"] == "basketball" else "⚽"
+                plain += f"  {icon}  {m['away']} @ {m['home']}  —  {m['league_name']}  —  {m['time']}\n"
             plain += "\n"
         plain += f"Edit your teams: https://sports-reminder-ui.vercel.app"
 
@@ -1400,16 +1411,16 @@ def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
             server.sendmail(GMAIL_SENDER, to, msg.as_string())
-        print(f"Ã¢ÂÂ  Weekly email sent to {to}")
+        print(f"✅  Weekly email sent to {to}")
         return True
     except Exception as e:
-        print(f"Ã¢ÂÂ  Weekly email failed: {e}")
+        print(f"❌  Weekly email failed: {e}")
         return False
 
 
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
 # MAIN
-# Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+# ─────────────────────────────────────────────────────────────────────────────
 MOCK_TEAMS = [
     {"name": "Hapoel Tel Aviv",  "sport": "basketball", "leagueId": "euroleague",        "league": "EuroLeague"},
     {"name": "Maccabi Tel Aviv", "sport": "basketball", "leagueId": "euroleague",        "league": "EuroLeague"},
@@ -1431,28 +1442,28 @@ def main():
     send_mode      = "--send"        in args
     test_mode      = "--test"        in args
     mock_mode      = "--mock"        in args
-    stats_only     = "--stats-only"  in args   # 07:00 IL Ã¢ÂÂ post-game stats only
-    no_stats       = "--no-stats"    in args   # 09:00 IL Ã¢ÂÂ morning games only
-    weekly_mode    = "--weekly"      in args   # Saturday 22:00 IL Ã¢ÂÂ weekly digest
+    stats_only     = "--stats-only"  in args   # 07:00 IL — post-game stats only
+    no_stats       = "--no-stats"    in args   # 09:00 IL — morning games only
+    weekly_mode    = "--weekly"      in args   # Saturday 22:00 IL — weekly digest
     today          = today_israel()
 
-    print(f"\nÃ°ÂÂÂÃ¯Â¸Â  Sports Reminder Ã¢ÂÂ {today}")
+    print(f"\n🗓️  Sports Reminder — {today}")
     print("=" * 50)
 
     if mock_mode:
-        print("\nÃ°ÂÂ§Âª MOCK MODE Ã¢ÂÂ using fake teams & games (no network calls)\n")
+        print("\n🧪 MOCK MODE — using fake teams & games (no network calls)\n")
         tracked = MOCK_TEAMS
         matches = MOCK_MATCHES
         print(f"   Tracked teams ({len(tracked)}):")
         for t in tracked:
-            print(f"   Ã¢ÂÂ¢ {t['name']}  [{t['league']} / {t['sport']}]")
-        print(f"\nÃ°ÂÂÂ¯ {len(matches)} mock match(es) today:\n")
+            print(f"   • {t['name']}  [{t['league']} / {t['sport']}]")
+        print(f"\n🎯 {len(matches)} mock match(es) today:\n")
         for m in matches:
-            emoji = "Ã¢ÂÂ½" if m["sport"] == "soccer" else "Ã°ÂÂÂ"
+            emoji = "⚽" if m["sport"] == "soccer" else "🏀"
             print(f"  {emoji}  {m['away']} @ {m['home']}")
-            print(f"      {m['league_name']}  Ã¢ÂÂ  {m['time']} (Israel time)\n")
+            print(f"      {m['league_name']}  —  {m['time']} (Israel time)\n")
         if send_mode:
-            print(f"Ã°ÂÂÂ§ Sending mock email to {GMAIL_SENDER}...")
+            print(f"📧 Sending mock email to {GMAIL_SENDER}...")
             send_email(GMAIL_SENDER, matches, today)
         else:
             # Show the HTML that would be sent
@@ -1460,18 +1471,18 @@ def main():
             out_path = "/tmp/sports_reminder_preview.html"
             with open(out_path, "w") as f:
                 f.write(html)
-            print(f"Ã°ÂÂÂ Email HTML preview saved to: {out_path}")
+            print(f"📄 Email HTML preview saved to: {out_path}")
             print("   Open it in a browser to see how the email looks.")
             print("\n   Run with --mock --send to actually send it.")
         return
 
-    # Ã¢ÂÂÃ¢ÂÂ Weekly digest mode (Saturday night, 22:00 IL) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+    # ── Weekly digest mode (Saturday night, 22:00 IL) ───────────────────────
     if weekly_mode:
         weekly_enabled = load_weekly_digest_flag(FIRESTORE_DOC)
         if not weekly_enabled and not test_mode:
-            print("\nÃ°ÂÂÂ Weekly digest disabled in user settings Ã¢ÂÂ skipping.")
+            print("\n📅 Weekly digest disabled in user settings → skipping.")
             return
-        print(f"\nÃ°ÂÂÂ Weekly digest mode Ã¢ÂÂ fetching 7 days from {today}...")
+        print(f"\n📅 Weekly digest mode — fetching 7 days from {today}...")
         tracked = load_tracked_teams(FIRESTORE_DOC)
         if not tracked:
             print("   No tracked teams found.")
@@ -1479,48 +1490,48 @@ def main():
         print(f"   Found {len(tracked)} tracked team(s).")
         matches_by_day = find_week_matches(tracked, today)
         total = sum(len(v) for v in matches_by_day.values())
-        print(f"\nÃ°ÂÂÂÃ¯Â¸Â  {total} match(es) found across {len(matches_by_day)} day(s):")
+        print(f"\n🗓️  {total} match(es) found across {len(matches_by_day)} day(s):")
         for date_str, day_matches in matches_by_day.items():
             dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
             print(f"\n  {dt.strftime('%A, %b')} {dt.day}:")
             for m in day_matches:
-                icon = "Ã°ÂÂÂ" if m["sport"] == "basketball" else "Ã¢ÂÂ½"
-                print(f"    {icon}  {m['away']} @ {m['home']}  Ã¢ÂÂ  {m['league_name']}  Ã¢ÂÂ  {m['time']}")
+                icon = "🏀" if m["sport"] == "basketball" else "⚽"
+                print(f"    {icon}  {m['away']} @ {m['home']}  —  {m['league_name']}  —  {m['time']}")
         if send_mode:
-            print(f"\nÃ°ÂÂÂ§ Sending weekly email to {GMAIL_SENDER}...")
+            print(f"\n📧 Sending weekly email to {GMAIL_SENDER}...")
             send_weekly_email(GMAIL_SENDER, matches_by_day, today)
         else:
-            print("\nÃ¢ÂÂ¹Ã¯Â¸Â  Dry-run. Add --send to send the weekly digest.")
+            print("\nℹ️  Dry-run. Add --send to send the weekly digest.")
         return
 
-    # Ã¢ÂÂÃ¢ÂÂ Stats-only mode (post-game email, 07:00 IL) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+    # ── Stats-only mode (post-game email, 07:00 IL) ─────────────────────────
     if stats_only:
         avdija_enabled = load_avdija_stats_flag(FIRESTORE_DOC)
         if not avdija_enabled:
-            print("\nÃ°ÂÂÂ Avdija stats disabled in user settings Ã¢ÂÂ skipping stats email.")
+            print("\n📊 Avdija stats disabled in user settings → skipping stats email.")
             return
-        print("\nÃ°ÂÂÂ Stats-only mode Ã¢ÂÂ fetching last game stats...")
+        print("\n📊 Stats-only mode — fetching last game stats...")
         player_stats = []
         for p in PLAYER_WATCH:
             ps = fetch_player_last_game_stats(p)
             if ps:
                 label = "DNP" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
-                print(f"   Ã°ÂÂÂ {p['display_name']}: {label} ({ps['game_date_il']})")
+                print(f"   🏀 {p['display_name']}: {label} ({ps['game_date_il']})")
                 player_stats.append(ps)
             else:
-                print(f"   Ã¢ÂÂ Ã¯Â¸Â  {p['display_name']}: no recent game found")
+                print(f"   ⚠️  {p['display_name']}: no recent game found")
         if send_mode:
             if player_stats:
-                print(f"\nÃ°ÂÂÂ§ Sending stats email to {GMAIL_SENDER}...")
+                print(f"\n📧 Sending stats email to {GMAIL_SENDER}...")
                 send_email(GMAIL_SENDER, [], today, player_stats)
             else:
-                print("\nÃ°ÂÂÂ­ No player stats found Ã¢ÂÂ no email sent.")
+                print("\n📭 No player stats found → no email sent.")
         else:
-            print("Ã¢ÂÂ¹Ã¯Â¸Â  Dry-run (stats-only). Add --send to send.")
+            print("ℹ️  Dry-run (stats-only). Add --send to send.")
         return
 
     # 1. Load tracked teams from Firestore
-    print(f"\nÃ°ÂÂÂ¥ Loading teams from Firestore (doc: {FIRESTORE_DOC})...")
+    print(f"\n📥 Loading teams from Firestore (doc: {FIRESTORE_DOC})...")
     tracked = load_tracked_teams(FIRESTORE_DOC)
     if not tracked:
         print("   No tracked teams found.")
@@ -1528,43 +1539,43 @@ def main():
 
     print(f"   Found {len(tracked)} tracked team(s):")
     for t in tracked:
-        print(f"   Ã¢ÂÂ¢ {t['name']}  [{t['league']} / {t['sport']}]")
+        print(f"  #• {t['name']}  [{t['league']} / {t['sport']}]")
 
     # 2. Check today's matches
-    print(f"\nÃ°ÂÂÂ Checking ESPN for today's games...")
+    print(f"\n🔍 Checking ESPN for today's games...")
     matches = find_my_matches(tracked, today)
 
     # 3. Fetch player stats (skipped when --no-stats or flag disabled in Firestore)
     player_stats = []
     if no_stats:
-        print(f"\nÃ°ÂÂÂ Skipping player stats (--no-stats mode).")
+        print(f"\n📊 Skipping player stats (--no-stats mode).")
         watch_list = []
     else:
         avdija_enabled = load_avdija_stats_flag(FIRESTORE_DOC)
         if avdija_enabled:
-            print(f"\nÃ°ÂÂÂ Fetching player stats...")
+            print(f"\n📊 Fetching player stats...")
             watch_list = PLAYER_WATCH
         else:
-            print(f"\nÃ°ÂÂÂ Avdija stats disabled in user settings Ã¢ÂÂ skipping.")
+            print(f"\n📊 Avdija stats disabled in user settings — skipping.")
             watch_list = []
     for p in watch_list:
         ps = fetch_player_last_game_stats(p)
         if ps:
-            label = "ÃÂÃÂ ÃÂ©ÃÂÃÂÃÂ§" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
-            print(f"   Ã°ÂÂÂ {ps['player_name']}: {label} ({ps['game_date_il']})")
+            label = "לא שיחק" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
+            print(f"   🏀 {ps['player_name']}: {label} ({ps['game_date_il']})")
             player_stats.append(ps)
         else:
-            print(f"   Ã¢ÂÂ Ã¯Â¸Â  {p['display_name']}: ÃÂÃÂ ÃÂ ÃÂÃÂ¦ÃÂ ÃÂÃÂ©ÃÂÃÂ§ ÃÂÃÂÃÂ¨ÃÂÃÂ")
+            print(f"   ⚠️  {p['display_name']}: לא נמצא משחק אחרון")
 
     # 4. Show results
     if not matches:
-        print(f"\nÃ°ÂÂÂ´ No matches today for your teams.")
+        print(f"\n😴 No matches today for your teams.")
     else:
-        print(f"\nÃ°ÂÂÂ¯ {len(matches)} match(es) today:\n")
+        print(f"\n🎯 {len(matches)} match(es) today:\n")
         for m in matches:
-            emoji = "Ã¢ÂÂ½" if m["sport"] == "soccer" else "Ã°ÂÂÂ"
+            emoji = "⚽" if m["sport"] == "soccer" else "🏀"
             print(f"  {emoji}  {m['away']} @ {m['home']}")
-            print(f"      {m['league_name']}  Ã¢ÂÂ  {m['time']} (Israel time)")
+            print(f"      {m['league_name']}  —  {m['time']} (Israel time)")
             print()
 
     # 5. Send email?
@@ -1576,18 +1587,18 @@ def main():
                 "time": "21:00", "status": "Scheduled",
                 "tracked_team": "FC Barcelona", "league_name": "La Liga", "sport": "soccer"
             }]
-        print(f"\nÃ°ÂÂÂ§ Test mode Ã¢ÂÂ sending email to {GMAIL_SENDER}...")
+        print(f"\n📧 Test mode — sending email to {GMAIL_SENDER}...")
         send_email(GMAIL_SENDER, matches, today, player_stats)
 
     elif send_mode:
         if matches or player_stats:
-            print(f"\nÃ°ÂÂÂ§ Sending email to {GMAIL_SENDER}...")
+            print(f"\n📧 Sending email to {GMAIL_SENDER}...")
             send_email(GMAIL_SENDER, matches, today, player_stats)
         else:
-            print("\nÃ°ÂÂÂ­ No matches and no player stats Ã¢ÂÂ no email sent.")
+            print("\n📭 No matches and no player stats → no email sent.")
 
     else:
-        print("Ã¢ÂÂ¹Ã¯Â¸Â  Dry-run mode. Run with --send to send email, --test to test email delivery.")
+        print("ℹ️  Dry-run mode. Run with --send to send email, --test to test email delivery.")
 
 if __name__ == "__main__":
     main()
