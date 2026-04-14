@@ -297,11 +297,11 @@ def names_match(api_name: str, our_name: str) -> bool:
     """
     Match an API team name against the user's stored name.
     Layers (first match wins):
-      1. Alias table   — handles abbreviations (Man City → Manchester City)
-      2. Exact norm   ─ handles accents, FC/AS prefixes
-      3. Word-subset ─ handles sponsor insertions (Maccabi Rapyd Tel Aviv → Maccabi Tel Aviv)
-      4. Noise-strip + word-subset — handles sponsor at start/end for short names
-      5. Noise-strip + single-word —  "Panathinaikos" matches "Panathinaikos Aktor Athens"
+      1. Alias table  — handles abbreviations (Man City → Manchester City)
+      2. Exact norm   — handles accents, FC/AS prefixes
+      3. Word-subset  — handles sponsor insertions (Maccabi Rapyd Tel Aviv → Maccabi Tel Aviv)
+      4. Noise-strip + word-subset  — handles sponsor at start/end for short names
+      5. Noise-strip + single-word  — "Panathinaikos" matches "Panathinaikos Aktor Athens"
     """
     # 1. Alias table (case-insensitive key lookup)
     resolved = TEAM_ALIASES.get(api_name) or TEAM_ALIASES.get(api_name.title()) or api_name
@@ -339,7 +339,7 @@ def names_match(api_name: str, our_name: str) -> bool:
     # 5. Single significant word after noise stripping:
     #    user saves "Panathinaikos", API says "Panathinaikos Aktor Athens"
     #    → after stripping "aktor": "panathinaikos athens"
-    #   → "panathinaikos" is the FIRST word → match
+    #    → "panathinaikos" is the FIRST word → match
     #    Require ≥6 chars to avoid false positives on city names like "Milan"
     clean_api_list = clean_api.split()
     if (len(clean_our_words) == 1
@@ -374,7 +374,7 @@ def today_israel() -> str:
 def load_tracked_teams(doc_id: str, enabled_only: bool = True) -> list[dict]:
     """
     Returns list of dicts: [{name, sport, leagueId, league, enabled}, ...]
-    Uses Firebase REST API  — no SDK needed.
+    Uses Firebase REST API — no SDK needed.
 
     enabled_only=True  → skip teams where enabled=false (for dry-run / real send)
     enabled_only=False → return ALL teams regardless of enabled flag (for validation)
@@ -396,8 +396,42 @@ def load_tracked_teams(doc_id: str, enabled_only: bool = True) -> list[dict]:
     teams = []
     for t in teams_field:
         m = t.get("mapValue", {}).get("fields", {})
-        # Support optional "enabled" boolean field stored by the React UI	
-     "V�&�VE�f�V�B���vWB�&V�&�VB"��Ґ��b&&���V�f�VR"��V�&�VE�f�V�C��V�&�VB�&��V�&�VE�f�V�E�&&���V�f�VR%Ґ�V�6S��V�&�VB�G'VR2'6V�B�V�&�V@��bV�&�VE���ǒ�B��BV�&�VC��6��F��VP�FV�2�V�B���&��R#���vWB�&��R"��Ғ�vWB�'7G&��uf�VR"�""���'7�'B#���vWB�'7�'B"��Ғ�vWB�'7G&��uf�VR"�""���&�VwVT�B#���vWB�&�VwVT�B"��Ғ�vWB�'7G&��uf�VR"�""���&�VwVR#���vWB�&�VwVR"��Ғ�vWB�'7G&��uf�VR"�""���&V�&�VB#�V�&�VB��Ґ�&WGW&�FV�0���FVb��E�fF���7FG5�f�r�F�5��C�7G"���&��à�""%&WGW&�2G'VR�bfF��7FG2V����2V�&�VB�FVfV�C�G'VR�bf�V�B'6V�B��"" �W&����b&�GG3���f�&W7F�&R�v��v�V�2�6���c�&��V7G2��d�$T$4U�$��T5G� �b"�FF&6W2�FVfV�B��F�7V�V�G2�6��f�w2��F�5��G� �b#��W�״d�$T$4U����U�� ���G'���FF�fWF6���6��W&�W�6WBW�6WF��㠢&WGW&�G'VR2FVfV�BF�V�&�VB��W'&� �fF���f�V�B�FF�vWB�&f�V�G2"��Ғ�vWB�&fF���7FG2"��Ґ��b&&���V�f�VR"��fF���f�V�C��&WGW&�&��fF���f�V�E�&&���V�f�VR%Ґ�&WGW&�G'VR2'6V�B�V�&�V@���FVb��E�vVV�Ǖ�F�vW7E�f�r�F�5��d: str) -> bool:
+        # Support optional "enabled" boolean field stored by the React UI
+        enabled_field = m.get("enabled", {})
+        if "booleanValue" in enabled_field:
+            enabled = bool(enabled_field["booleanValue"])
+        else:
+            enabled = True  # absent = enabled
+        if enabled_only and not enabled:
+            continue
+        teams.append({
+            "name":     m.get("name",     {}).get("stringValue", ""),
+            "sport":    m.get("sport",    {}).get("stringValue", ""),
+            "leagueId": m.get("leagueId", {}).get("stringValue", ""),
+            "league":   m.get("league",   {}).get("stringValue", ""),
+            "enabled":  enabled,
+        })
+    return teams
+
+
+def load_avdija_stats_flag(doc_id: str) -> bool:
+    """Returns True if Avdija stats email is enabled (default: True if field absent)."""
+    url = (
+        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
+        f"/databases/(default)/documents/configs/{doc_id}"
+        f"?key={FIREBASE_API_KEY}"
+    )
+    try:
+        data = fetch_json(url)
+    except Exception:
+        return True  # default to enabled on error
+    avdija_field = data.get("fields", {}).get("avdija_stats", {})
+    if "booleanValue" in avdija_field:
+        return bool(avdija_field["booleanValue"])
+    return True  # absent = enabled
+
+
+def load_weekly_digest_flag(doc_id: str) -> bool:
     """Returns True if weekly digest email is enabled (default: False — opt-in feature)."""
     url = (
         f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
@@ -558,173 +592,172 @@ def fetch_euroleague_games(league_id: str, today: str) -> list[dict]:
         # schedules uses <startime>; results used <time>
         time_raw = (game.findtext("startime") or game.findtext("time") or "").strip()
 
-        # Convert CET/CEST (Berlin) → Israel time (EuroLeague APtched_as": errors[0].replace("__ERROR__", ""),
-                "games_found": 0,
-            })
-            continue
+        # Convert CET/CEST (Berlin) → Israel time (EuroLeague API returns startime in CET)
+        try:
+            t = datetime.datetime.strptime(time_raw, "%H:%M")
+            game_berlin = datetime.datetime.combine(game_dt, t.time())
+            berlin_offset = _berlin_utc_offset_h(game_berlin)
+            game_utc = game_berlin - datetime.timedelta(hours=berlin_offset)
+            il_offset = _israel_utc_offset_h(game_utc)
+            game_israel = game_utc + datetime.timedelta(hours=il_offset)
+            time_str = game_israel.strftime("%H:%M")
+        except Exception:
+            time_str = time_raw or "TBD"
 
-        if not api_teams:
-            results.append({
-                "name": team["name"], "league": team.get("league", league_id),
-                "leagueId": league_id,
-                "status": "unsupported", "matched_as": "League not supported yet",
-                "games_found": 0,
-            })
-            continue
+        games.append({
+            "home":      home,
+            "away":      away,
+            "time":      time_str,
+            "status":    "Scheduled",
+            "league_id": league_id,
+        })
+    return games
 
-        # Try to find a match in API team list
-        matched = [t for t in api_teams if names_match(t, team["name"])]
-        if matched:
-            results.append({
-                "name": team["name"], "league": team.get("league", league_id),
-                "leagueId": league_id,
-                "status": "ok",
-                "matched_as": matched[0] if len(matched) == 1 else f"{matched[0]} (+{len(matched)-1} more)",
-                "games_found": len(matched),
-            })
+# ─────────────────────────────────────────────────────────────────────────────
+# THESPORTSDB — Israeli Basketball Premier League
+# ─────────────────────────────────────────────────────────────────────────────
+def fetch_tsdb_games(league_id: str, today: str) -> list[dict]:
+    """Fetch today's games from TheSportsDB for leagues in TSDB_LEAGUES."""
+    league_name = TSDB_LEAGUES.get(league_id)
+    if not league_name:
+        return []
+    url = (f"https://www.thesportsdb.com/api/v1/json/{TSDB_FREE_KEY}"
+           f"/eventsday.php?d={today}&l={urllib.parse.quote(league_name)}")
+    try:
+        data = fetch_json(url)
+    except Exception as e:
+        print(f"  ⚠️  TheSportsDB fetch failed for {league_id}: {e}")
+        return []
+    events = data.get("events") or []
+    games = []
+    for ev in events:
+        if ev.get("strStatus") in ("FT", "AOT", "AET"):
+            continue  # skip finished games
+        home = ev.get("strHomeTeam", "")
+        away = ev.get("strAwayTeam", "")
+        # strTimeLocal is already Israel time; fall back to strTime (UTC) + offset
+        time_local = (ev.get("strTimeLocal") or "").strip()
+        if time_local:
+            time_str = time_local[:5]   # "HH:MM"
         else:
-            # Show the closest API names to help the user fix it
-            hint = ", ".join(api_teams[:5]) + ("..." if len(api_teams) > 5 else "")
+            try:
+                t = datetime.datetime.strptime((ev.get("strTime") or "")[:5], "%H:%M")
+                t_il = t + datetime.timedelta(hours=TIMEZONE_OFFSET)
+                time_str = t_il.strftime("%H:%M")
+            except Exception:
+                time_str = "TBD"
+        games.append({
+            "home":      home,
+            "away":      away,
+            "time":      time_str,
+            "status":    ev.get("strStatus", "Scheduled"),
+            "league_id": league_id,
+        })
+    return games
+
+def _all_teams_from_tsdb(league_id: str) -> list[str]:
+    """Fetch all team names from TheSportsDB season schedule (for Validation)."""
+    lid = TSDB_LEAGUE_IDS.get(league_id)
+    if not lid:
+        return []
+    url = (f"https://www.thesportsdb.com/api/v1/json/{TSDB_FREE_KEY}"
+           f"/eventsseason.php?id={lid}&s={urllib.parse.quote(TSDB_SEASON)}")
+    try:
+        data = fetch_json(url)
+    except Exception as e:
+        return [f"__ERROR__{e}"]
+    events = data.get("events") or []
+    seen = set()
+    for ev in events:
+        for field in ("strHomeTeam", "strAwayTeam"):
+            name = (ev.get(field) or "").strip()
+            if name:
+                seen.add(name)
+    return sorted(seen)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VALIDATION — check every tracked team can be found in its league's API
+# ─────────────────────────────────────────────────────────────────────────────
+def _all_teams_from_euroleague(league_id: str) -> list[str]:
+    """Fetch every team name from the full season schedule."""
+    _, season_code = EUROLEAGUE_COMPETITION_CODES[league_id]
+    url = f"https://api-live.euroleague.net/v1/schedules?seasonCode={season_code}"
+    try:
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "Accept": "application/xml,text/xml,*/*",
+            "Origin": "https://www.euroleague.net",
+            "Referer": "https://www.euroleague.net/",
+        })
+        with urllib.request.urlopen(req, timeout=20) as r:
+            xml_data = r.read()
+    except Exception as e:
+        return [f"__ERROR__{e}"]
+    try:
+        root = ET.fromstring(xml_data)
+    except Exception as e:
+        return [f"__ERROR__{e}"]
+    seen = set()
+    for item in root.findall("item"):
+        for field in ("hometeam", "awayteam"):
+            name = (item.findtext(field) or "").strip()
+            if name:
+                seen.add(name)
+    return sorted(seen)
+
+def _all_teams_from_espn(league_id: str) -> list[str]:
+    """Fetch ALL team names from ESPN /teams endpoint (full league roster, not just today)."""
+    scoreboard_url = ESPN_ENDPOINTS.get(league_id)
+    if not scoreboard_url:
+        return []
+    # Replace /scoreboard with /teams to get the full team list regardless of today's schedule
+    teams_url = scoreboard_url.replace("/scoreboard", "/teams")
+    try:
+        data = fetch_json(teams_url)
+    except Exception as e:
+        return [f"__ERROR__{e}"]
+    seen = set()
+    # ESPN /teams response: {"sports":[{"leagues":[{"teams":[{"team":{"displayName":...}}]}]}]}
+    for sport in data.get("sports", []):
+        for league in sport.get("leagues", []):
+            for entry in league.get("teams", []):
+                name = entry.get("team", {}).get("displayName", "")
+                if name:
+                    seen.add(name)
+    return sorted(seen)
+
+def validate_teams(tracked: list[dict]) -> list[dict]:
+    """
+    For each tracked team, check whether it can be found in its league's API.
+    Returns list of dicts: {name, league, status, matched_as, games_found}
+    """
+    # Cache API team lists per league_id
+    api_teams_cache: dict[str, list[str]] = {}
+
+    def get_api_teams(league_id: str) -> list[str]:
+        if league_id not in api_teams_cache:
+            if league_id in EUROLEAGUE_COMPETITION_CODES:
+                api_teams_cache[league_id] = _all_teams_from_euroleague(league_id)
+            elif league_id in TSDB_LEAGUES:
+                api_teams_cache[league_id] = _all_teams_from_tsdb(league_id)
+            elif ESPN_ENDPOINTS.get(league_id):
+                api_teams_cache[league_id] = _all_teams_from_espn(league_id)
+            else:
+                api_teams_cache[league_id] = []
+        return api_teams_cache[league_id]
+
+    results = []
+    for team in tracked:
+        league_id = team["leagueId"]
+        api_teams = get_api_teams(league_id)
+
+        # Check for fetch error
+        errors = [t for t in api_teams if t.startswith("__ERROR__")]
+        if errors:
             results.append({
                 "name": team["name"], "league": team.get("league", league_id),
                 "leagueId": league_id,
-                "status": "no_match",
-                "matched_as": f"Not found. API has: {hint}",
-                "games_found": 0,
-            })
-    return results
-
-# ─────────────────────────────────────────────────────────────────────────────
-# FIRESTORE WRITE — disable teams that fail validation
-# ─────────────────────────────────────────────────────────────────────────────
-def disable_failing_teams(doc_id: str) -> dict:
-    """
-    Re-enable ALL teams, then run fresh validation and disable only those
-    not found in any league API (status='no_match').
-    This corrects previous false-positive disables (e.g. due to incomplete ESPN data).
-    Returns {"disabled": [...], "reenabled": int, "total": int, "error": str|None}
-    """
-    import urllib.request as _ur
-    base_url = (
-        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/configs/{doc_id}"
-        f"?key={FIREBASE_API_KEY}"
-    )
-    # --- 1. Fetch raw Firestore doc ---
-    try:
-        raw = fetch_json(base_url)
-    except Exception as e:
-        return {"disabled": [], "reenabled": 0, "total": 0, "error": str(e)}
-
-    raw_values = (raw.get("fields", {})
-                     .get("teams", {})
-                     .get("arrayValue", {})
-                     .get("values", []))
-
-    # --- 2. Re-enable ALL disabled teams so we get a fresh slate ---
-    reenabled = 0
-    for entry in raw_values:
-        fields = entry.get("mapValue", {}).get("fields", {})
-        enabled_field = fields.get("enabled", {})
-        if enabled_field.get("booleanValue") is False:
-            fields["enabled"] = {"booleanValue": true}
-            reenabled += 1
-
-    # --- 3. Run validation on ALL teams (all now enabled) ---
-    tracked = load_tracked_teams(doc_id, enabled_only=False)
-    if not tracked:
-        return {"disabled": [], "reenabled": 0, "total": 0, "error": "No teams found in Firestore"}
-
-    results = validate_teams(tracked)
-    failing = {(r["name"], r["leagueId"])
-               for r in results if r["status"] == "no_match"}
-
-    # --- 4. Disable only the truly failing teams ---
-    disabled_names = []
-    for entry in raw_values:
-        fields = entry.get("mapValue", {}).get("fields", {})
-        name      = fields.get("name",     {}).get("stringValue", "")
-        league_id = fields.get("leagueId", {}).get("stringValue", "")
-        if (name, league_id) in failing:
-            fields["enabled"] = {"booleanValue": false}
-            disabled_names.append(f"{name} [{league_id}]")
-
-    # --- 4. PATCH only the teams field back to Firestore ---
-    patch_url = base_url + "&updateMask.fieldPaths=teams"
-    body = json.dumps({
-        "fields": {
-            "teams": {"arrayValue": {"values": raw_values}}
-        }
-    }).encode()
-    req = _ur.Request(
-        patch_url, data=body, method="PATCH",
-        headers={"Content-Type": "application/json"}
-    )
-    try:
-        with _ur.urlopen(req, timeout=15) as r:
-            r.read()
-    except Exception as e:
-        return {"disabled": [], "reenabled": reenabled, "total": 0, "error": f"Firestore write failed: {e}"}
-
-    return {"disabled": disabled_names, "reenabled": reenabled, "total": len(disabled_names), "error": None}
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# MATCHING — find which of your teams play today
-# ─────────────────────────────────────────────────────────────────────────────
-def find_my_matches(tracked: list[dict], today: str) -> list[dict]:
-    """Cross-reference tracked teams with today's ESPN schedule."""
-    # Group tracked teams by leagueId
-    leagues_needed = set(t["leagueId"] for t in tracked)
-
-    # Fetch games per league (cache per league_id)
-    games_by_league: dict[str, list] = {}
-    for league_id in leagues_needed:
-        if league_id in ESPN_ENDPOINTS or league_id in EUROLEAGUE_COMPETITION_CODES:
-            games_by_league[league_id] = fetch_todays_games(league_id, today)
-
-    matches = []
-    seen = set()
-
-    for tracked_team in tracked:
-        league_id = tracked_team["leagueId"]
-        games = games_by_league.get(league_id, [])
-
-        for game in games:
-            game_key = f"{game['home']}_{game['away']}_{league_id}"
-            if game_key in seen:
-                continue
-
-            if names_match(game["home"], tracked_team["name"]) or \
-               names_match(game["away"], tracked_team["name"]):
-                matches.append({
-                    **game,
-                    "tracked_team": tracked_team["name"],
-                    "league_name":  tracked_team.get("league") or league_id,
-                    "sport":        tracked_team["sport"],
-                })
-                seen.add(game_key)
-
-    # Sort by time
-    matches.sort(key=lambda m: m["time"])
-    return matches
-
-
-def find_week_matches(tracked: list[dict], start_date: str) -> dict:
-    """Fetch matches for 7 days starting from start_date (serial).
-    Games are bucketed by their *Israel date* (il_date), not the ESPN query date.
-    This ensures NBA overnight games appear on the correct Israel day.
-    Returns dict: date_str -> list[match], sorted by date, only days with matches."""
-    import time as _time
-
-    start_dt = datetime.datetime.strptime(start_date, "%Y-%m-%d")
-    end_date  = (start_dt + datetime.timedelta(days=6)).strftime("%Y-%m-%d")
-
-    # Query ESPN dates from (start_date - 1) through (start_date + 6).
-    # The extra day-before catches NBA late-night US games whose Israel date = start_date.
-    espn_dates = [
-        (start_dt + datetime.timedelta(days=i)).strftime("%Y-%m-%d")
-        for i in tched_as": errors[0].replace("__ERROR__", ""),
+                "status": "error", "matched_as": errors[0].replace("__ERROR__", ""),
                 "games_found": 0,
             })
             continue
@@ -1037,7 +1070,7 @@ def fetch_player_last_game_stats(player: dict) -> dict | None:
                         "away":         away["team"]["displayName"],
                         "home_score":   home.get("score", ""),
                         "away_score":   away.get("score", ""),
-                        "won":          our_team.get("winner", false),
+                        "won":          our_team.get("winner", False),
                         "game_date_il": game_date_il,
                         "pts":          stat_map.get("PTS", "?"),
                         "reb":          stat_map.get("REB", "?"),
@@ -1051,7 +1084,7 @@ def fetch_player_last_game_stats(player: dict) -> dict | None:
                         "pf":           stat_map.get("PF", "?"),
                         "plus_minus":   stat_map.get("+/-", "?"),
                         "min":          stat_map.get("MIN", "?"),
-                        "dnp":          athlete.get("didNotPlay", false),
+                        "dnp":          athlete.get("didNotPlay", False),
                     }
     return None
 
@@ -1231,7 +1264,7 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
     # Plain text fallback
     plain = f"Your matches for {date_str}:\n\n"
     for m in matches:
-        plain += f"  {m['away']} @ {m['home']}  ―  {m['league_name']}  —  {m['time']} (IL)\n"
+        plain += f"  {m['away']} @ {m['home']}  —  {m['league_name']}  —  {m['time']} (IL)\n"
     if player_stats:
         plain += "\n---\n"
         for ps in player_stats:
@@ -1528,11 +1561,11 @@ def main():
     for p in watch_list:
         ps = fetch_player_last_game_stats(p)
         if ps:
-            label = לא שٙחק" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
-            print(f"   🏀 {ps['player_name']}: {label} ({ps['ame_date_il']})")
+            label = "לא שיחק" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
+            print(f"   🏀 {ps['player_name']}: {label} ({ps['game_date_il']})")
             player_stats.append(ps)
         else:
-            print(f"   ⚠️  {p['display_name']}: לא נלצל משחק �חרון")
+            print(f"   ⚠️  {p['display_name']}: לא נמצא משחק אחרון")
 
     # 4. Show results
     if not matches:
@@ -1541,7 +1574,7 @@ def main():
         print(f"\n🎯 {len(matches)} match(es) today:\n")
         for m in matches:
             emoji = "⚽" if m["sport"] == "soccer" else "🏀"
-            print(f"  {emoji}  {m['away+]} @ {m['home']}")
+            print(f"  {emoji}  {m['away']} @ {m['home']}")
             print(f"      {m['league_name']}  —  {m['time']} (Israel time)")
             print()
 
@@ -1550,7 +1583,7 @@ def main():
         # Send a test email with dummy data if no real matches
         if not matches:
             matches = [{
-                "home": "Real Madrid", "away": "FCBarcelona",
+                "home": "Real Madrid", "away": "FC Barcelona",
                 "time": "21:00", "status": "Scheduled",
                 "tracked_team": "FC Barcelona", "league_name": "La Liga", "sport": "soccer"
             }]
@@ -1569,4 +1602,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-()
