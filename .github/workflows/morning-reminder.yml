@@ -1,0 +1,21 @@
+name: Morning Games Reminder
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # 09:00 Israel time
+  workflow_dispatch:
+
+jobs:
+  send-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Send morning games email
+        env:
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python3 sports_reminder.py --send --no-stats
