@@ -465,8 +465,8 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
     if not url:
         return []
 
-    # For NBA, query both today and tomorrow (UTC) to catch overnight games
-    if league_id == "nba":
+    # For NBA and MLS, query both today and tomorrow (UTC) to catch overnight games
+    if league_id in ("nba", "mls"):
         today_fmt    = today.replace("-", "")
         tomorrow_utc = (datetime.datetime.strptime(today, "%Y-%m-%d")
                         + datetime.timedelta(days=1)).strftime("%Y%m%d")
@@ -517,8 +517,8 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
         except Exception:
             time_str = "TBD"
 
-        # NBA: only show games within the next 24 hours (skip this filter in weekly_mode)
-        if league_id == "nba" and game_utc_dt is not None and not weekly_mode:
+        # NBA/MLS: only show games within the next 24 hours (skip this filter in weekly_mode)
+        if league_id in ("nba", "mls") and game_utc_dt is not None and not weekly_mode:
             now_utc = datetime.datetime.utcnow()
             if game_utc_dt < now_utc or game_utc_dt > now_utc + datetime.timedelta(hours=24):
                 continue
@@ -575,7 +575,7 @@ def fetch_euroleague_games(league_id: str, today: str) -> list[dict]:
         return []
 
     games = []
-    # schedules API uses <item> elements; results API uses <game>
+    # schedules API uses <item> elements; results API used <game>
     for game in root.findall("item"):
         date_str = (game.findtext("date") or "").strip()   # e.g. "Mar 24, 2026"
         if not date_str:
@@ -635,17 +635,24 @@ def fetch_tsdb_games(league_id: str, today: str) -> list[dict]:
             continue  # skip finished games
         home = ev.get("strHomeTeam", "")
         away = ev.get("strAwayTeam", "")
-        # strTimeLocal is already Israel time; fall back to strTime (UTC) + offset
-        time_local = (ev.get("strTimeLocal") or "").strip()
-        if time_local:
-            time_str = time_local[:5]   # "HH:MM"
-        else:
+        # Always use strTime (UTC) + DST-aware offset.
+        # strTimeLocal is unreliable — TheSportsDB returns UTC+2 (IST) even during IDT (UTC+3),
+        # causing a 1-hour error during Israeli summer time (DST).
+        time_utc = (ev.get("strTime") or "").strip()
+        if time_utc:
             try:
-                t = datetime.datetime.strptime((ev.get("strTime") or "")[:5], "%H:%M")
-                t_il = t + datetime.timedelta(hours=TIMEZONE_OFFSET)
+                t_utc = datetime.datetime.strptime(time_utc[:5], "%H:%M")
+                game_utc_full = datetime.datetime.combine(
+                    datetime.datetime.strptime(today, "%Y-%m-%d").date(),
+                    t_utc.time()
+                )
+                il_offset = _israel_utc_offset_h(game_utc_full)
+                t_il = t_utc + datetime.timedelta(hours=il_offset)
                 time_str = t_il.strftime("%H:%M")
             except Exception:
                 time_str = "TBD"
+        else:
+            time_str = "TBD"
         games.append({
             "home":      home,
             "away":      away,
@@ -656,7 +663,7 @@ def fetch_tsdb_games(league_id: str, today: str) -> list[dict]:
     return games
 
 def _all_teams_from_tsdb(league_id: str) -> list[str]:
-    """Fetch all team names from TheSportsDB season schedule (for Validation)."""
+    """Fetch all team names from TheSportsDB season schedule (for validation)."""
     lid = TSDB_LEAGUE_IDS.get(league_id)
     if not lid:
         return []
@@ -923,7 +930,7 @@ def find_week_matches(tracked: list[dict], start_date: str) -> dict:
     # The extra day-before catches NBA late-night US games whose Israel date = start_date.
     espn_dates = [
         (start_dt + datetime.timedelta(days=i)).strftime("%Y-%m-%d")
-        for i in range(-1, 7)   # 8 ESPN dates total
+        for i in range(-1, 7)  # 8 ESPN dates total
     ]
 
     leagues_needed = set(t["leagueId"] for t in tracked)
@@ -982,7 +989,7 @@ def find_week_matches(tracked: list[dict], start_date: str) -> dict:
         if game_key in seen_global:
             continue
         seen_global.add(game_key)
-        results.setdefault(il_date, []).append(match)
+         results.setdefault(il_date, []).append(match)
 
     # Sort matches within each day by time
     for day_matches in results.values():
@@ -1223,7 +1230,7 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
         </div>
         <div style="padding:16px 24px 8px;">
           {''.join([
-            f'<p style="color:#374151; margin:0 0 16px; font-size:14px;">You have <strong>{len(matches)} {"match" if len(matches)==1 else "matches"}</strong> today:</p>',
+            f'<p style="color:#374151; margin:0 0 16px; font-size:14px;">You have <strong>{len(matches)} {"match" if len(matches)==1 else "matches"}</strong> ahead:</p>',
             f'<table style="width:100%; border-collapse:collapse;">{rows}</table>'
           ]) if matches else ''}
           {player_stats_html}
@@ -1254,7 +1261,7 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
             result = "W" if ps["won"] else "L"
             subject = f"🏀 {ps['player_name']} — {ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast ({result}) — {ps['game_date_il']}"
     else:
-        subject  = f"🏟️ {len(matches)} match{'es' if len(matches)!=1 else ''} today — {date_str}"
+        subject  = f"🏟️ {len(matches)} match{'es' if len(matches)!=1 else ''} ahead — {date_str}"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
@@ -1456,7 +1463,7 @@ def main():
         matches = MOCK_MATCHES
         print(f"   Tracked teams ({len(tracked)}):")
         for t in tracked:
-            print(f"   • {t['name']}  [{t['league']} / {t['sport']}]")
+            print(f"  #• {t['name']}  [{t['league']} / {t['sport']}]")
         print(f"\n🎯 {len(matches)} mock match(es) today:\n")
         for m in matches:
             emoji = "⚽" if m["sport"] == "soccer" else "🏀"
@@ -1516,10 +1523,10 @@ def main():
             ps = fetch_player_last_game_stats(p)
             if ps:
                 label = "DNP" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
-                print(f"   🏀 {p['display_name']}: {label} ({ps['game_date_il']})")
+                print(f"  #🏀 {p['display_name']}: {label} ({ps['game_date_il']})")
                 player_stats.append(ps)
             else:
-                print(f"   ⚠️  {p['display_name']}: no recent game found")
+                print(f"  #⚠️  {p['display_name']}: no recent game found")
         if send_mode:
             if player_stats:
                 print(f"\n📧 Sending stats email to {GMAIL_SENDER}...")
@@ -1539,7 +1546,7 @@ def main():
 
     print(f"   Found {len(tracked)} tracked team(s):")
     for t in tracked:
-        print(f"  #• {t['name']}  [{t['league']} / {t['sport']}]")
+        print(f"   • {t['name']}  [{t['league']} / {t['sport']}]")
 
     # 2. Check today's matches
     print(f"\n🔍 Checking ESPN for today's games...")
@@ -1562,10 +1569,10 @@ def main():
         ps = fetch_player_last_game_stats(p)
         if ps:
             label = "לא שיחק" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
-            print(f"   🏀 {ps['player_name']}: {label} ({ps['game_date_il']})")
+            print(f"  #🏀 {ps['player_name']}: {label} ({ps['game_date_il']})")
             player_stats.append(ps)
         else:
-            print(f"   ⚠️  {p['display_name']}: לא נמצא משחק אחרון")
+            print(f"  #⚠️  {p['display_name']}: לא נמצא משחק אחרון")
 
     # 4. Show results
     if not matches:
