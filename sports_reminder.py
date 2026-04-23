@@ -1520,7 +1520,7 @@ def main():
         print("\n📊 Stats-only mode — fetching last game stats...")
         player_stats = []
         for p in PLAYER_WATCH:
-            ps = fetch_player_last_gameStats(p)
+            ps = fetch_player_last_game_stats(p)
             if ps:
                 label = "DNP" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
                 print(f"   🏀 {p['display_name']}: {label} ({ps['game_date_il']})")
