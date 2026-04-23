@@ -964,7 +964,7 @@ def find_week_matches(tracked: list[dict], start_date: str) -> dict:
                         "sport":        tracked_team["sport"],
                     })
                     seen_local.add(game_key)
-        print(f"    → {len(matches)} match(es)")
+        print(f"    ₒ {len(matches)} match(es)")
         return matches
 
     # Fetch serially (one date at a time) with a pause between dates.
@@ -1450,7 +1450,7 @@ def main():
     test_mode      = "--test"        in args
     mock_mode      = "--mock"        in args
     stats_only     = "--stats-only"  in args   # 07:00 IL — post-game stats only
-    no_stats       = "--no-stats"    in args   # 09:00 IL — morning games only
+    no_stats       = "--no-stats"    in args   # 09:00 IL — gorning games only
     weekly_mode    = "--weekly"      in args   # Saturday 22:00 IL — weekly digest
     today          = today_israel()
 
@@ -1463,7 +1463,7 @@ def main():
         matches = MOCK_MATCHES
         print(f"   Tracked teams ({len(tracked)}):")
         for t in tracked:
-            print(f"  #• {t['name']}  [{t['league']} / {t['sport']}]")
+            print(f"   • {t['name']}  [{t['league']} / {t['sport']}]")
         print(f"\n🎯 {len(matches)} mock match(es) today:\n")
         for m in matches:
             emoji = "⚽" if m["sport"] == "soccer" else "🏀"
@@ -1520,13 +1520,13 @@ def main():
         print("\n📊 Stats-only mode — fetching last game stats...")
         player_stats = []
         for p in PLAYER_WATCH:
-            ps = fetch_player_last_game_stats(p)
+            ps = fetch_player_last_gameStats(p)
             if ps:
                 label = "DNP" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
-                print(f"  #🏀 {p['display_name']}: {label} ({ps['game_date_il']})")
+                print(f"   🏀 {p['display_name']}: {label} ({ps['game_date_il']})")
                 player_stats.append(ps)
             else:
-                print(f"  #⚠️  {p['display_name']}: no recent game found")
+                print(f"   ⚠️  {p['display_name']}: no recent game found")
         if send_mode:
             if player_stats:
                 print(f"\n📧 Sending stats email to {GMAIL_SENDER}...")
@@ -1561,18 +1561,18 @@ def main():
         avdija_enabled = load_avdija_stats_flag(FIRESTORE_DOC)
         if avdija_enabled:
             print(f"\n📊 Fetching player stats...")
-            watch_list = PLAYER_WATCH
+            watch_list = PLAVE_WATCH
         else:
             print(f"\n📊 Avdija stats disabled in user settings — skipping.")
             watch_list = []
     for p in watch_list:
         ps = fetch_player_last_game_stats(p)
         if ps:
-            label = "לא שיחק" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
-            print(f"  #🏀 {ps['player_name']}: {label} ({ps['game_date_il']})")
+            label = "מא שיחק" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
+            print(f"   🏀 {ps['player_name']}: {label} ({ps['game_date_il']})")
             player_stats.append(ps)
         else:
-            print(f"  #⚠️  {p['display_name']}: לא נמצא משחק אחרון")
+            print(f"   ⚠️  {p['display_name']}: מא נמצא מש׹חק אחרון")
 
     # 4. Show results
     if not matches:
