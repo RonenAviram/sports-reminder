@@ -930,7 +930,7 @@ def find_week_matches(tracked: list[dict], start_date: str) -> dict:
     # The extra day-before catches NBA late-night US games whose Israel date = start_date.
     espn_dates = [
         (start_dt + datetime.timedelta(days=i)).strftime("%Y-%m-%d")
-        for i in range(-1, 7)  # 8 ESPN dates total
+        for i in range(-1, 7)   # 8 ESPN dates total
     ]
 
     leagues_needed = set(t["leagueId"] for t in tracked)
@@ -964,7 +964,7 @@ def find_week_matches(tracked: list[dict], start_date: str) -> dict:
                         "sport":        tracked_team["sport"],
                     })
                     seen_local.add(game_key)
-        print(f"    ₒ {len(matches)} match(es)")
+        print(f"    → {len(matches)} match(es)")
         return matches
 
     # Fetch serially (one date at a time) with a pause between dates.
@@ -989,7 +989,7 @@ def find_week_matches(tracked: list[dict], start_date: str) -> dict:
         if game_key in seen_global:
             continue
         seen_global.add(game_key)
-         results.setdefault(il_date, []).append(match)
+        results.setdefault(il_date, []).append(match)
 
     # Sort matches within each day by time
     for day_matches in results.values():
