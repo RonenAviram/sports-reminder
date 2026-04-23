@@ -939,9 +939,11 @@ def find_week_matches(tracked: list[dict], start_date: str) -> dict:
         """Fetch all tracked-team matches for one ESPN date in weekly mode (serial)."""
         print(f"  📅 Fetching {date_str}...")
         games_by_league: dict[str, list] = {}
-        for lid in leagues_needed:
+        for i, lid in enumerate(leagues_needed):
             if lid in ESPN_ENDPOINTS or lid in EUROLEAGUE_COMPETITION_CODES or lid in TSDB_LEAGUES:
                 games_by_league[lid] = fetch_todays_games(lid, date_str, weekly_mode=True)
+                if i < len(leagues_needed) - 1:
+                    _time.sleep(0.3)  # avoid ESPN rate limiting within a single date
 
         matches = []
         seen_local: set = set()
