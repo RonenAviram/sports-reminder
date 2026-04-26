@@ -509,11 +509,21 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
         # Try to get game time in Israel timezone (DST-aware)
         game_utc_dt = None
         game_local  = None
-        time_valid  = comp.get("timeValid", True)  # ESPN: false = placeholder time
+        # ESPN puts timeValid on competition OR event — check both
+        time_valid  = comp.get("timeValid", event.get("timeValid", True))
         try:
             game_utc_dt = datetime.datetime.strptime(event["date"], "%Y-%m-%dT%H:%MZ")
             il_offset   = _israel_utc_offset_h(game_utc_dt)
             game_local  = game_utc_dt + datetime.timedelta(hours=il_offset)
+
+            # NBA playoff placeholder detection: ESPN uses midnight UTC (00:00)
+            # or early-morning UTC (01:00-04:00) as placeholders for unscheduled
+            # games. Real NBA games are never before 15:00 UTC (~10 AM ET).
+            if league_id == "nba" and game_utc_dt.hour < 10:
+                status_state = comp.get("status", {}).get("type", {}).get("state", "")
+                if status_state == "pre":  # not yet started
+                    time_valid = False
+
             time_str    = "TBD" if not time_valid else game_local.strftime("%H:%M")
         except Exception:
             time_str = "TBD"
@@ -1166,10 +1176,12 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
                 parts.append(p_series)
                         _join_parts = " \u00b7 ".join(parts)
             playoff_html = f'<div style="font-size:11px; color:#9333ea; margin-top:2px; font-style:italic;">{_join_parts}</div>'
-        # Time display
+        # Time display — TBD gets a muted style; "If Necessary" gets extra note
+        is_if_necessary = "if necessary" in p_note.lower()
         if m["time"] == "TBD":
             time_html = '<span style="font-weight:600; color:#9ca3af;">TBD</span>'
-            time_sub  = ""
+            time_sub  = ('<div style="font-size:10px; color:#d97706;">if necessary</div>'
+                         if is_if_necessary else "")
         else:
             time_html = f'<span style="font-weight:600; color:#1a56db;">{m["time"]}</span>'
             time_sub  = '<div style="font-size:12px; color:#999;">Israel time</div>'
@@ -1389,9 +1401,12 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
                         parts.append(p_series)
                                         _join_parts = " \u00b7 ".join(parts)
                     playoff_html = f'<div style="font-size:11px; color:#9333ea; margin-top:2px; font-style:italic;">{_join_parts}</div>'
-                # Time display â TBD gets a muted style
+                # Time display — TBD gets a muted style; "If Necessary" gets extra note
+                is_if_necessary = "if necessary" in p_note.lower()
                 if m["time"] == "TBD":
-                    time_html = '<span style="font-weight:600; color:#9ca3af;">TBD</span>'
+                    tbd_sub = ('<div style="font-size:10px; color:#d97706;">if nec.</div>'
+                               if is_if_necessary else "")
+                    time_html = f'<span style="font-weight:600; color:#9ca3af;">TBD</span>{tbd_sub}'
                 else:
                     time_html = f'<span style="font-weight:600; color:#1a56db;">{m["time"]}</span>'
                 rows += f"""
