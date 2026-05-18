@@ -1321,56 +1321,6 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
     plain = f"Your matches for {date_str}:\n\n"
     for m in matches:
         plain += f"  {m['away']} @ {m['home']}  —  {m['league_name']}  —  {m['time']} (IL)\n"
-    px; line-height:1;">🏟️</div>
-          <h1 style="color:white; margin:0; font-size:18px; font-weight:700;">
-            Sports Reminder
-          </h1>
-          <p style="color:#94a3b8; margin:4px 0 0; font-size:13px;">{date_formatted}</p>
-        </div>
-        <div style="padding:16px 24px 8px;">
-          {''.join([
-            f'<p style="color:#374151; margin:0 0 16px; font-size:14px;">You have <strong>{len(matches)} {"match" if len(matches)==1 else "matches"}</strong> ahead:</p>',
-            f'<table style="width:100%; border-collapse:collapse;">{rows}</table>'
-          ]) if matches else ''}
-          {player_stats_html}
-        </div>
-        <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
-          <a href="https://sports-reminder-ui.vercel.app"
-             style="font-size:12px; color:#6b7280; text-decoration:none;">
-            ✏️ Edit your teams at sports-reminder-ui.vercel.app
-          </a>
-        </div>
-      </div>
-    </body></html>
-    """
-
-def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict] | None = None):
-    if not GMAIL_APP_PASSWORD:
-        print("❌  GMAIL_APP_PASSWORD not set. Export it as an env variable:")
-        print("    export GMAIL_APP_PASSWORD='xxxx xxxx xxxx xxxx'")
-        return False
-
-    _dt2 = datetime.datetime.strptime(today, "%Y-%m-%d")
-    date_str = _dt2.strftime("%b ") + str(_dt2.day)
-    if not matches and player_stats:
-        ps = player_stats[0]
-        if ps.get("dnp"):
-            subject = f"🏀 {ps['player_name']} — DNP — {ps['game_date_il']}"
-        else:
-            result = "W" if ps["won"] else "L"
-            subject = f"🏀 {ps['player_name']} — {ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast ({result}) — {ps['game_date_il']}"
-    else:
-        subject  = f"🏟️ {len(matches)} match{'es' if len(matches)!=1 else ''} ahead — {date_str}"
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"]    = GMAIL_SENDER
-    msg["To"]      = to
-
-    # Plain text fallback
-    plain = f"Your matches for {date_str}:\n\n"
-    for m in matches:
-        plain += f"  {m['away']} @ {m['home']}  —  {m['league_name']}  —  {m['time']} (IL)\n"
     if player_stats:
         plain += "\n---\n"
         for ps in player_stats:
@@ -1678,7 +1628,60 @@ def main():
     print(f"\n🔍 Checking ESPN for today's games...")
     matches = find_my_matches(tracked, today)
 
-est email delivery.")
+    # 3. Fetch player stats (skipped when --no-stats or flag disabled in Firestore)
+    player_stats = []
+    if no_stats:
+        print(f"\n📊 Skipping player stats (--no-stats mode).")
+        watch_list = []
+    else:
+        avdija_enabled = load_avdija_stats_flag(FIRESTORE_DOC)
+        if avdija_enabled:
+            print(f"\n📊 Fetching player stats...")
+            watch_list = PLAYER_WATCH
+        else:
+            print(f"\n📊 Avdija stats disabled in user settings — skipping.")
+            watch_list = []
+    for p in watch_list:
+        ps = fetch_player_last_game_stats(p)
+        if ps:
+            label = "לא שיחק" if ps.get("dnp") else f"{ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast"
+            print(f"   🏀 {ps['player_name']}: {label} ({ps['game_date_il']})")
+            player_stats.append(ps)
+        else:
+            print(f"   ⚠️  {p['display_name']}: לא נמצא משחק אחרון")
+
+    # 4. Show results
+    if not matches:
+        print(f"\n😴 No matches today for your teams.")
+    else:
+        print(f"\n🎯 {len(matches)} match(es) today:\n")
+        for m in matches:
+            emoji = "⚽" if m["sport"] == "soccer" else "🏀"
+            print(f"  {emoji}  {m['away']} @ {m['home']}")
+            print(f"      {m['league_name']}  —  {m['time']} (Israel time)")
+            print()
+
+    # 5. Send email?
+    if test_mode:
+        # Send a test email with dummy data if no real matches
+        if not matches:
+            matches = [{
+                "home": "Real Madrid", "away": "FC Barcelona",
+                "time": "21:00", "status": "Scheduled",
+                "tracked_team": "FC Barcelona", "league_name": "La Liga", "sport": "soccer"
+            }]
+        print(f"\n📧 Test mode — sending email to {GMAIL_SENDER}...")
+        send_email(GMAIL_SENDER, matches, today, player_stats)
+
+    elif send_mode:
+        if matches or player_stats:
+            print(f"\n📧 Sending email to {GMAIL_SENDER}...")
+            send_email(GMAIL_SENDER, matches, today, player_stats)
+        else:
+            print("\n📭 No matches and no player stats → no email sent.")
+
+    else:
+        print("ℹ️  Dry-run mode. Run with --send to send email, --test to test email delivery.")
 
 if __name__ == "__main__":
     main()
