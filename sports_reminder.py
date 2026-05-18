@@ -509,20 +509,13 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
         # Try to get game time in Israel timezone (DST-aware)
         game_utc_dt = None
         game_local  = None
-        # ESPN puts timeValid on competition OR event — check both
+        # ESPN puts timeValid on competition OR event — check both.
+        # We trust ESPN's timeValid field; no extra placeholder heuristic needed.
         time_valid  = comp.get("timeValid", event.get("timeValid", True))
         try:
             game_utc_dt = datetime.datetime.strptime(event["date"], "%Y-%m-%dT%H:%MZ")
             il_offset   = _israel_utc_offset_h(game_utc_dt)
             game_local  = game_utc_dt + datetime.timedelta(hours=il_offset)
-
-            # NBA playoff placeholder detection: ESPN uses midnight UTC (00:00)
-            # or early-morning UTC (01:00-04:00) as placeholders for unscheduled
-            # games. Real NBA games are never before 15:00 UTC (~10 AM ET).
-            if league_id == "nba" and game_utc_dt.hour < 10:
-                status_state = comp.get("status", {}).get("type", {}).get("state", "")
-                if status_state == "pre":  # not yet started
-                    time_valid = False
 
             time_str    = "TBD" if not time_valid else game_local.strftime("%H:%M")
         except Exception:
