@@ -929,8 +929,8 @@ def find_my_matches(tracked: list[dict], today: str) -> list[dict]:
                 })
                 seen.add(game_key)
 
-    # Sort by time
-    matches.sort(key=lambda m: m["time"])
+    # Sort chronologically by Israel date + time
+    matches.sort(key=lambda m: (m.get("il_date", today), m["time"]))
     return matches
 
 
@@ -1125,7 +1125,9 @@ def _gcal_url(match: dict, today: str) -> str | None:
         return None
     try:
         h, mi = map(int, match["time"].split(":"))
-        y, mo, d = map(int, today.split("-"))
+        # Use the game's Israel date (il_date) for correct calendar event date
+        game_date = match.get("il_date", today)
+        y, mo, d = map(int, game_date.split("-"))
         il_dt = datetime.datetime(y, mo, d, h, mi)
         # Estimate UTC: use il_dt minus 3h as rough UTC to determine DST offset
         rough_utc = il_dt - datetime.timedelta(hours=3)
@@ -1171,12 +1173,21 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
             playoff_html = f'<div style="font-size:11px; color:#9333ea; margin-top:2px; font-style:italic;">{_joined}</div>'
         # Time display — TBD gets a muted style; "If Necessary" gets extra note
         is_if_necessary = "if necessary" in p_note.lower()
+        # Show Israel date next to time when game falls on a different Israel date
+        game_il_date = m.get("il_date", today)
+        if game_il_date != today and m["time"] != "TBD":
+            _g_dt = datetime.datetime.strptime(game_il_date, "%Y-%m-%d")
+            _g_day_name = _g_dt.strftime("%a")  # e.g. "Tue"
+            _g_date_str = f"{_g_day_name} {_g_dt.day}/{_g_dt.month}"
+            date_prefix = f'<div style="font-size:11px; color:#6b7280; margin-bottom:1px;">{_g_date_str}</div>'
+        else:
+            date_prefix = ""
         if m["time"] == "TBD":
             time_html = '<span style="font-weight:600; color:#9ca3af;">TBD</span>'
             time_sub  = ('<div style="font-size:10px; color:#d97706;">if necessary</div>'
                          if is_if_necessary else "")
         else:
-            time_html = f'<span style="font-weight:600; color:#1a56db;">{m["time"]}</span>'
+            time_html = f'{date_prefix}<span style="font-weight:600; color:#1a56db;">{m["time"]}</span>'
             time_sub  = '<div style="font-size:12px; color:#999;">Israel time</div>'
         rows += f"""
         <tr>
