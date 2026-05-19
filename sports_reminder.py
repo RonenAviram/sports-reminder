@@ -1159,18 +1159,12 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
             f'<a href="{gcal}" style="font-size:11px; color:#1a56db; text-decoration:none;">📅 Add to Calendar</a>'
             f'</div>'
         ) if gcal and m["time"] != "TBD" else ""
-        # Playoff series info line (NBA)
+        # Playoff series info line (NBA) — daily email shows only playoff_note
+        # (e.g. "East Finals - Game 1"), not series_summary ("Series starts X/X")
         playoff_html = ""
         p_note  = m.get("playoff_note", "")
-        p_series = m.get("series_summary", "")
-        if p_note or p_series:
-            parts = []
-            if p_note:
-                parts.append(p_note)
-            if p_series:
-                parts.append(p_series)
-            _joined = " · ".join(parts)
-            playoff_html = f'<div style="font-size:11px; color:#9333ea; margin-top:2px; font-style:italic;">{_joined}</div>'
+        if p_note:
+            playoff_html = f'<div style="font-size:11px; color:#9333ea; margin-top:2px; font-style:italic;">{p_note}</div>'
         # Time display — TBD gets a muted style; "If Necessary" gets extra note
         is_if_necessary = "if necessary" in p_note.lower()
         # Show Israel date next to time when game falls on a different Israel date
