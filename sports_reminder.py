@@ -1336,7 +1336,7 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
         else:
             matchup_html = f'{m["away"]} @ {m["home"]}'
 
-rows += f"""
+        rows += f"""
         <tr>
           <td style="padding:12px 16px; font-size:16px; border-bottom:1px solid #f0f0f0;">
             {emoji}
