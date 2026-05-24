@@ -1462,14 +1462,14 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
             result = "W" if ps["won"] else "L"
             subject = f"ð {ps['player_name']} â {ps['pts']} pts / {ps['reb']} reb / {ps['ast']} ast ({result}) â {ps['game_date_il']}"
     else:
-        subject  = f"ðï¸ {len(matches)}         wc_count    = sum(1 for m in matches if m.get("is_world_cup") or m.get("league_id") == "fifa_world_cup")
+        wc_count    = sum(1 for m in matches if m.get("is_world_cup") or m.get("league_id") == "fifa_world_cup")
         other_count = len(matches) - wc_count
         if wc_count and not other_count:
             subject = f"🏆 World Cup — {wc_count} match{'es' if wc_count!=1 else ''} — {date_str}"
         elif wc_count and other_count:
             subject = f"🏆 {wc_count} WC + {other_count} other — {date_str}"
         else:
-match{'es' if len(matches)!=1 else ''} ahead â {date_str}"
+            subject  = f"🏟️ {len(matches)} match{'es' if len(matches)!=1 else ''} ahead — {date_str}"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
