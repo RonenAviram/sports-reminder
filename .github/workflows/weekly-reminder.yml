@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '0 17 * * 6'  # 20:00 Israel time Saturday
   workflow_dispatch:
+    inputs:
+      simulate_date:
+        description: 'Simulate date (YYYY-MM-DD), leave empty for today'
+        required: false
+        default: ''
 
 jobs:
   send-reminder:
@@ -18,4 +23,9 @@ jobs:
       - name: Send weekly digest
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: python3 sports_reminder.py --send --weekly
+        run: |
+          if [ -n "${{ github.event.inputs.simulate_date }}" ]; then
+            python3 sports_reminder.py --send --weekly --simulate-date "${{ github.event.inputs.simulate_date }}"
+          else
+            python3 sports_reminder.py --send --weekly
+          fi
