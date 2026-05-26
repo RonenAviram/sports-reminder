@@ -1162,6 +1162,193 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# FULL TOURNAMENT — fetch all FIFA World Cup games (group stage + knockout)
+# ─────────────────────────────────────────────────────────────────────────────
+def fetch_full_tournament_games(tracked_names: set) -> dict:
+    """Fetch ALL FIFA World Cup 2026 games from June 11 to July 19.
+    Returns dict: date_str -> list[match], sorted by date.
+    tracked_names is used to mark ⭐ on tracked teams."""
+    import time as _time
+
+    start_dt = datetime.datetime(2026, 6, 11)
+    end_dt   = datetime.datetime(2026, 7, 19)
+
+    # Build list of ESPN query dates (UTC)
+    espn_dates = []
+    d = start_dt
+    while d <= end_dt:
+        espn_dates.append(d.strftime("%Y-%m-%d"))
+        d += datetime.timedelta(days=1)
+
+    print(f"  🏆 Fetching {len(espn_dates)} days of World Cup games...")
+    all_matches: list[dict] = []
+    seen: set = set()
+
+    for i, date_str in enumerate(espn_dates):
+        try:
+            games = fetch_todays_games("fifa_world_cup", date_str, weekly_mode=True)
+            for game in games:
+                if "il_date" not in game:
+                    game["il_date"] = date_str
+                game_key = f"{game['home']}_{game['away']}_{date_str}"
+                if game_key in seen:
+                    continue
+                seen.add(game_key)
+                # Check if tracked
+                t_team = ""
+                for tname in tracked_names:
+                    if names_match(game["home"], tname) or names_match(game["away"], tname):
+                        t_team = tname
+                        break
+                all_matches.append({
+                    **game,
+                    "tracked_team": t_team,
+                    "league_name":  "FIFA World Cup",
+                    "sport":        "soccer",
+                    "is_world_cup": True,
+                })
+            print(f"    📅 {date_str}: {len(games)} game(s)")
+        except Exception as e:
+            print(f"    ⚠️  {date_str}: {e}")
+        if i < len(espn_dates) - 1:
+            _time.sleep(0.5)
+
+    # Bucket by Israel date
+    results: dict[str, list] = {}
+    for match in all_matches:
+        il_date = match.get("il_date", "")
+        results.setdefault(il_date, []).append(match)
+
+    # Sort matches within each day by time
+    for day_matches in results.values():
+        day_matches.sort(key=lambda m: m["time"])
+
+    print(f"  ✅ Total: {len(all_matches)} games across {len(results)} days")
+    return dict(sorted(results.items()))
+
+
+def build_tournament_email_html(matches_by_day: dict) -> str:
+    """Build HTML email for the full World Cup tournament schedule."""
+    total = sum(len(v) for v in matches_by_day.values())
+    days_html = ""
+    for date_str, matches in matches_by_day.items():
+        dt        = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+        day_label = dt.strftime("%A, %b ") + str(dt.day)
+        rows      = ""
+        for m in matches:
+            gcal     = _gcal_url(m, date_str)
+            gcal_html = (
+                f'<div style="margin-top:4px;">'
+                f'<a href="{gcal}" style="font-size:11px; color:#1a56db; text-decoration:none;">📅 Add to Calendar</a>'
+                f'</div>'
+            ) if gcal and m["time"] != "TBD" else ""
+            # Tournament round info
+            tournament_html = ""
+            t_note = m.get("tournament_note", "")
+            if t_note:
+                tournament_html = f'<div style="font-size:11px; color:#b45309; margin-top:2px; font-style:italic;">{t_note}</div>'
+            # Time
+            if m["time"] == "TBD":
+                time_html = '<span style="font-weight:600; color:#9ca3af;">TBD</span>'
+            else:
+                time_html = f'<span style="font-weight:600; color:#1a56db;">{m["time"]}</span>'
+            # Matchup with flags
+            home_flag = _country_flag_emoji(m.get("home_abbr", ""))
+            away_flag = _country_flag_emoji(m.get("away_abbr", ""))
+            h_disp = f"{home_flag} {m['home']}" if home_flag else m["home"]
+            a_disp = f"{away_flag} {m['away']}" if away_flag else m["away"]
+            tracked_t = m.get("tracked_team", "")
+            if tracked_t:
+                if names_match(m["home"], tracked_t):
+                    h_disp += " ⭐"
+                elif names_match(m["away"], tracked_t):
+                    a_disp += " ⭐"
+            matchup_str = (f'{h_disp}<br>'
+                           f'<span style="font-size:12px; color:#888;">Vs</span><br>'
+                           f'{a_disp}')
+            rows += f"""
+                <tr>
+                  <td style="padding:10px 12px; font-size:15px; border-bottom:1px solid #f0f0f0; width:32px; vertical-align:top;">🏆</td>
+                  <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0;">
+                    <div style="font-weight:600; color:#111;">{matchup_str}</div>
+                    <div style="font-size:12px; color:#666; margin-top:2px;">{m['league_name']}</div>
+                    {tournament_html}
+                    {gcal_html}
+                  </td>
+                  <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0; text-align:right; white-space:nowrap;">
+                    {time_html}
+                  </td>
+                </tr>"""
+        days_html += f"""
+            <div>
+              <div style="padding:8px 16px; font-size:11px; font-weight:700; color:#6b7280;
+                          text-transform:uppercase; letter-spacing:0.06em;
+                          background:#f8fafc; border-top:1px solid #e5e7eb;">{day_label}</div>
+              <table style="width:100%; border-collapse:collapse;">{rows}</table>
+            </div>"""
+
+    return f"""
+    <html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+                       background:#f8fafc; margin:0; padding:20px;">
+      <div style="max-width:520px; margin:0 auto; background:white; border-radius:16px;
+                  overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+        <div style="background:#0f172a; padding:20px 24px;">
+          <div style="font-size:40px; margin-bottom:4px; line-height:1;">🏆</div>
+          <h1 style="color:white; margin:0; font-size:18px; font-weight:700;">FIFA World Cup 2026</h1>
+          <p style="color:#94a3b8; margin:4px 0 0; font-size:13px;">Full Schedule — {total} matches · Israel time</p>
+        </div>
+        <div>{days_html}</div>
+        <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
+          <a href="https://sports-reminder-ui.vercel.app"
+             style="font-size:12px; color:#6b7280; text-decoration:none;">
+            ✏️ Edit your teams at sports-reminder-ui.vercel.app
+          </a>
+        </div>
+      </div>
+    </body></html>
+    """
+
+
+def send_tournament_email(to: str, matches_by_day: dict):
+    """Send the full tournament schedule email."""
+    if not GMAIL_APP_PASSWORD:
+        print("❌  GMAIL_APP_PASSWORD not set.")
+        return False
+
+    total = sum(len(v) for v in matches_by_day.values())
+    subject = f"🏆 FIFA World Cup 2026 — Full Schedule — {total} matches"
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"]    = GMAIL_SENDER
+    msg["To"]      = to
+
+    plain = f"FIFA World Cup 2026 — Full Schedule ({total} matches, Israel time)\n\n"
+    for date_str, matches in matches_by_day.items():
+        dt     = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+        plain += f"{dt.strftime('%A, %b')} {dt.day}\n"
+        for m in matches:
+            plain += f"  ⚽  {m['home']} Vs {m['away']}  —  {m['time']}\n"
+            t_note = m.get("tournament_note", "")
+            if t_note:
+                plain += f"      {t_note}\n"
+        plain += "\n"
+
+    msg.attach(MIMEText(plain, "plain"))
+    msg.attach(MIMEText(build_tournament_email_html(matches_by_day), "html"))
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
+            server.sendmail(GMAIL_SENDER, to, msg.as_string())
+        print(f"✅  Tournament email sent to {to}")
+        return True
+    except Exception as e:
+        print(f"❌  Tournament email failed: {e}")
+        return False
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # PLAYER STATS — fetch last completed game stats for a watched player
 # ─────────────────────────────────────────────────────────────────────────────
 def fetch_player_last_game_stats(player: dict) -> dict | None:
@@ -1732,6 +1919,7 @@ def main():
     stats_only     = "--stats-only"  in args   # 07:00 IL — post-game stats only
     no_stats       = "--no-stats"    in args   # 09:00 IL — morning games only
     weekly_mode    = "--weekly"      in args   # Saturday 22:00 IL — weekly digest
+    tournament_mode = "--full-tournament" in args  # One-off: full WC schedule
     # --simulate-date YYYY-MM-DD: override today's date for testing
     sim_date = None
     for i, a in enumerate(args):
@@ -1766,6 +1954,27 @@ def main():
             print(f"📄 Email HTML preview saved to: {out_path}")
             print("   Open it in a browser to see how the email looks.")
             print("\n   Run with --mock --send to actually send it.")
+        return
+
+    # ── Full tournament mode (one-off WC schedule) ──────────────────────────
+    if tournament_mode:
+        print("\n🏆 Full Tournament mode — fetching all FIFA World Cup 2026 games...")
+        tracked = load_tracked_teams(FIRESTORE_DOC)
+        tracked_names = {t["name"] for t in tracked} if tracked else set()
+        print(f"   {len(tracked_names)} tracked team(s) will be marked with ⭐")
+        matches_by_day = fetch_full_tournament_games(tracked_names)
+        total = sum(len(v) for v in matches_by_day.values())
+        print(f"\n🏆 {total} match(es) found across {len(matches_by_day)} day(s)")
+        for date_str, day_matches in matches_by_day.items():
+            dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+            print(f"\n  {dt.strftime('%A, %b')} {dt.day}: {len(day_matches)} game(s)")
+            for m in day_matches:
+                print(f"    ⚽  {m['home']} Vs {m['away']}  —  {m['time']}")
+        if send_mode:
+            print(f"\n📧 Sending tournament email to {GMAIL_SENDER}...")
+            send_tournament_email(GMAIL_SENDER, matches_by_day)
+        else:
+            print("\nℹ️  Dry-run. Add --send to send the tournament email.")
         return
 
     # ── Weekly digest mode (Saturday night, 22:00 IL) ───────────────────────
