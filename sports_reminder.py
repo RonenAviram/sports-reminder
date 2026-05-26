@@ -520,8 +520,9 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
     if not url:
         return []
 
-    # For NBA and MLS, query both today and tomorrow (UTC) to catch overnight games
-    if league_id in ("nba", "mls"):
+    # For NBA, MLS, and FIFA World Cup: query both today and tomorrow (UTC)
+    # to catch overnight games that cross midnight UTC (e.g. 02:00Z = 05:00 IL)
+    if league_id in ("nba", "mls", "fifa_world_cup"):
         today_fmt    = today.replace("-", "")
         tomorrow_utc = (datetime.datetime.strptime(today, "%Y-%m-%d")
                         + datetime.timedelta(days=1)).strftime("%Y%m%d")
@@ -546,7 +547,12 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
     games = []
     for event in data.get("events", []):
         game_date = event.get("date", "")[:10]
-        if league_id == "nba":
+        # NBA, MLS, and FIFA WC: accept today + tomorrow UTC dates
+        if league_id in ("nba", "mls", "fifa_world_cup"):
+            if game_date != today and game_date != tomorrow_utc_str:
+                continue
+        # In weekly_mode: also accept tomorrow's date (cross-midnight games)
+        elif weekly_mode:
             if game_date != today and game_date != tomorrow_utc_str:
                 continue
         else:
@@ -1316,7 +1322,7 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
             time_html = f'{date_prefix}<span style="font-weight:600; color:#1a56db;">{m["time"]}</span>'
             time_sub  = '<div style="font-size:12px; color:#999;">Israel time</div>'
 
-        # Build team names — World Cup uses "vs" with flags; others use "@"
+        # Build team names — World Cup uses "Vs" with flags; others use "@"
         if is_wc:
             home_flag = _country_flag_emoji(m.get("home_abbr", ""))
             away_flag = _country_flag_emoji(m.get("away_abbr", ""))
@@ -1329,12 +1335,14 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
                     home_display += " ⭐"
                 elif names_match(m["away"], tracked):
                     away_display += " ⭐"
-            matchup_html = f'{home_display} vs {away_display}'
+            matchup_html = (f'{home_display}<br>'
+                           f'<span style="font-size:13px; color:#888;">Vs</span><br>'
+                           f'{away_display}')
         else:
             matchup_html = f'{m["away"]} @ {m["home"]}'
         rows += f"""
         <tr>
-          <td style="padding:12px 16px; font-size:16px; border-bottom:1px solid #f0f0f0;">
+          <td style="padding:12px 16px; font-size:16px; border-bottom:1px solid #f0f0f0; vertical-align:top;">
             {emoji}
           </td>
           <td style="padding:12px 16px; border-bottom:1px solid #f0f0f0;">
@@ -1476,7 +1484,7 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
     plain = f"Your matches for {date_str}:\n\n"
     for m in matches:
         is_wc = m.get("is_world_cup") or m.get("league_id") == "fifa_world_cup"
-        sep = " vs " if is_wc else " @ "
+        sep = " Vs " if is_wc else " @ "
         plain += f"  {m['away']}{sep}{m['home']}  —  {m['league_name']}  —  {m['time']} (IL)\n"
     if player_stats:
         plain += "\n---\n"
@@ -1572,7 +1580,7 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
                     time_html = f'<span style="font-weight:600; color:#9ca3af;">TBD</span>{tbd_sub}'
                 else:
                     time_html = f'<span style="font-weight:600; color:#1a56db;">{m["time"]}</span>'
-                # Build matchup text — World Cup uses "vs" with flags
+                # Build matchup text — World Cup uses "Vs" with flags
                 if is_wc:
                     home_flag = _country_flag_emoji(m.get("home_abbr", ""))
                     away_flag = _country_flag_emoji(m.get("away_abbr", ""))
@@ -1584,12 +1592,14 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
                             h_disp += " ⭐"
                         elif names_match(m["away"], tracked_t):
                             a_disp += " ⭐"
-                    matchup_str = f'{h_disp} vs {a_disp}'
+                    matchup_str = (f'{h_disp}<br>'
+                                   f'<span style="font-size:12px; color:#888;">Vs</span><br>'
+                                   f'{a_disp}')
                 else:
                     matchup_str = f'{m["away"]} @ {m["home"]}'
                 rows += f"""
                 <tr>
-                  <td style="padding:10px 12px; font-size:15px; border-bottom:1px solid #f0f0f0; width:32px;">{emoji}</td>
+                  <td style="padding:10px 12px; font-size:15px; border-bottom:1px solid #f0f0f0; width:32px; vertical-align:top;">{emoji}</td>
                   <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0;">
                     <div style="font-weight:600; color:#111;">{matchup_str}</div>
                     <div style="font-size:12px; color:#666; margin-top:2px;">{m['league_name']}</div>
