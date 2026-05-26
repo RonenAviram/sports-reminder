@@ -9,6 +9,10 @@ on:
         description: 'Simulate date (YYYY-MM-DD), leave empty for today'
         required: false
         default: ''
+      full_tournament:
+        description: 'Send full World Cup tournament schedule (true/false)'
+        required: false
+        default: 'false'
 
 jobs:
   send-reminder:
@@ -24,7 +28,9 @@ jobs:
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
-          if [ -n "${{ github.event.inputs.simulate_date }}" ]; then
+          if [ "${{ github.event.inputs.full_tournament }}" = "true" ]; then
+            python3 sports_reminder.py --send --full-tournament
+          elif [ -n "${{ github.event.inputs.simulate_date }}" ]; then
             python3 sports_reminder.py --send --no-stats --simulate-date "${{ github.event.inputs.simulate_date }}"
           else
             python3 sports_reminder.py --send --no-stats
