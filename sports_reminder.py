@@ -1707,7 +1707,12 @@ def main():
     stats_only     = "--stats-only"  in args   # 07:00 IL — post-game stats only
     no_stats       = "--no-stats"    in args   # 09:00 IL — morning games only
     weekly_mode    = "--weekly"      in args   # Saturday 22:00 IL — weekly digest
-    today          = today_israel()
+    # --simulate-date YYYY-MM-DD: override today's date for testing
+    sim_date = None
+    for i, a in enumerate(args):
+        if a == "--simulate-date" and i + 1 < len(args):
+            sim_date = args[i + 1]
+    today = sim_date if sim_date else today_israel()
 
     print(f"\n🗓️  Sports Reminder — {today}")
     print("=" * 50)
