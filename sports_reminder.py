@@ -548,6 +548,7 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
     for event in data.get("events", []):
         game_date = event.get("date", "")[:10]
         # NBA, MLS, and FIFA WC: accept today + tomorrow UTC dates
+        # (tomorrow UTC games are filtered below to only include pre-08:00 IL)
         if league_id in ("nba", "mls", "fifa_world_cup"):
             if game_date != today and game_date != tomorrow_utc_str:
                 continue
@@ -558,6 +559,20 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
         else:
             if game_date != today:
                 continue
+
+        # Cross-midnight filter: games from tomorrow_utc only appear in today's
+        # daily email if they start before 08:00 Israel time.
+        # This prevents e.g. a 22:00 IL game on the next day from showing up.
+        # Skip this filter in weekly_mode (weekly digest shows all games).
+        if game_date == tomorrow_utc_str and not weekly_mode:
+            try:
+                _utc_dt = datetime.datetime.strptime(event["date"], "%Y-%m-%dT%H:%MZ")
+                _il_off = _israel_utc_offset_h(_utc_dt)
+                _il_hour = (_utc_dt + datetime.timedelta(hours=_il_off)).hour
+                if _il_hour >= 8:
+                    continue
+            except Exception:
+                pass
 
         comp = event.get("competitions", [{}])[0]
         competitors = comp.get("competitors", [])
