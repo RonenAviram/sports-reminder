@@ -1190,7 +1190,7 @@ def fetch_full_tournament_games(tracked_names: set) -> dict:
             for game in games:
                 if "il_date" not in game:
                     game["il_date"] = date_str
-                game_key = f"{game['home']}_{game['away']}_{date_str}"
+                game_key = f"{game['home']}_{game['away']}"
                 if game_key in seen:
                     continue
                 seen.add(game_key)
