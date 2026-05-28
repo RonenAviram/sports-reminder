@@ -19,7 +19,6 @@ import xml.etree.ElementTree as ET
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.header import Header
-
 from player_stats import send_player_stats_emails
 
 # DST-aware timezone support (zoneinfo is stdlib since Python 3.9)
@@ -1919,7 +1918,7 @@ def main():
     send_mode      = "--send"        in args
     test_mode      = "--test"        in args
     mock_mode      = "--mock"        in args
-    player_stats_m = "--player-stats" in args or "--stats-only" in args  # 07:00 IL — post-game stats only
+    player_stats_m = "--player-stats" in args or "--stats-only" in args  # 07:00 IL
     no_stats       = "--no-stats"    in args   # 09:00 IL — morning games only
     weekly_mode    = "--weekly"      in args   # Saturday 22:00 IL — weekly digest
     tournament_mode = "--full-tournament" in args  # One-off: full WC schedule
@@ -2022,7 +2021,7 @@ def main():
         )
         return
 
-        # 1. Load tracked teams from Firestore
+    # 1. Load tracked teams from Firestore
     print(f"\n📥 Loading teams from Firestore (doc: {FIRESTORE_DOC})...")
     tracked = load_tracked_teams(FIRESTORE_DOC)
     if not tracked:
