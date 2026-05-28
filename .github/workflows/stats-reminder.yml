@@ -18,4 +18,4 @@ jobs:
       - name: Send stats email
         env:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: python3 sports_reminder.py --send --stats-only
+        run: python3 sports_reminder.py --send --player-stats
