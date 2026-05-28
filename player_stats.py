@@ -519,7 +519,7 @@ def format_subject_line(players_in_email: list[dict], email_type: str) -> str:
         for p in played:
             first_name = p["player_name"].split()[-1]  # last name
             parts.append(f"{first_name}: {p['pts']}p/{p['reb']}r/{p['ast']}a")
-        return f"{prefix} " + " · ".join(parts) + " â€” last night"
+        return f"{prefix} " + " Â· ".join(parts) + " â€” last night"
 
     # 4+ players â€” generic
     # Count unique games
@@ -594,9 +594,9 @@ def build_player_stat_card_html(ps: dict) -> str:
             </tr>
           </table>
           <div style="font-size:12px; color:#64748b; border-top:1px solid #bfdbfe; padding-top:6px;">
-            FG {ps['fg'].replace('-','/')} &nbsp;·&nbsp; 3PT {ps['three_pt'].replace('-','/')} &nbsp;·&nbsp; FT {ps['ft'].replace('-','/')}
-            &nbsp;·&nbsp; {ps['stl']} STL &nbsp;·&nbsp; {ps['blk']} BLK
-            &nbsp;·&nbsp; {ps['to']} TO &nbsp;·&nbsp; {ps['pf']} PF
+            FG {ps['fg'].replace('-','/')} &nbsp;Â·&nbsp; 3PT {ps['three_pt'].replace('-','/')} &nbsp;Â·&nbsp; FT {ps['ft'].replace('-','/')}
+            &nbsp;Â·&nbsp; {ps['stl']} STL &nbsp;Â·&nbsp; {ps['blk']} BLK
+            &nbsp;Â·&nbsp; {ps['to']} TO &nbsp;Â·&nbsp; {ps['pf']} PF
           </div>
         </div>"""
 
@@ -711,9 +711,9 @@ def _build_plain_text(players: list[dict]) -> str:
                 pass
             lines.append(
                 f"ğŸ€ {ps['player_name']} | {ps['away']} {ps['away_score']}â€“{ps['home_score']} {ps['home']} ({result}, {ps['game_date_il']})\n"
-                f"   {ps['min']} min · {ps['pts']} pts · {ps['reb']} reb · {ps['ast']} ast · {pm}\n"
-                f"   FG {ps['fg'].replace('-','/')} · 3PT {ps['three_pt'].replace('-','/')} · FT {ps['ft'].replace('-','/')}"
-                f" · {ps['stl']} stl · {ps['blk']} blk · {ps['to']} to · {ps['pf']} pf"
+                f"   {ps['min']} min Â· {ps['pts']} pts Â· {ps['reb']} reb Â· {ps['ast']} ast Â· {pm}\n"
+                f"   FG {ps['fg'].replace('-','/')} Â· 3PT {ps['three_pt'].replace('-','/')} Â· FT {ps['ft'].replace('-','/')}"
+                f" Â· {ps['stl']} stl Â· {ps['blk']} blk Â· {ps['to']} to Â· {ps['pf']} pf"
             )
     return "\n\n".join(lines) + "\n\nEdit players: https://sports-reminder-ui.vercel.app"
 
