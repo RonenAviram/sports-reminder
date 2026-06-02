@@ -408,6 +408,44 @@ def today_israel() -> str:
     israel_now = utc_now + datetime.timedelta(hours=_israel_utc_offset_h(utc_now))
     return israel_now.strftime("%Y-%m-%d")
 
+def _format_series_summary(series_summary: str, il_date: str = "") -> str:
+    """Reformat dates in NBA series_summary from M/D to 'Month Dth' using Israel date.
+
+    ESPN returns e.g. 'Series starts 6/3' in US timezone.  A game at 8:30 PM ET
+    is 3:30 AM Israel the *next* day, so we use the game's il_date (already
+    adjusted) when available.  Otherwise we just reformat M/D to month-name.
+    """
+    if not series_summary:
+        return series_summary
+
+    import re
+    _MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
+                    "July", "August", "September", "October", "November", "December"]
+
+    def _ordinal(n: int) -> str:
+        if 11 <= n % 100 <= 13:
+            return f"{n}th"
+        return f"{n}{['th','st','nd','rd'][min(n % 10, 4)] if n % 10 < 4 else 'th'}"
+
+    # If we have il_date and the summary mentions "starts", use il_date
+    if il_date and "starts" in series_summary.lower():
+        try:
+            dt = datetime.datetime.strptime(il_date, "%Y-%m-%d")
+            nice = f"{_MONTH_NAMES[dt.month - 1]} {_ordinal(dt.day)}"
+            return re.sub(r'\d{1,2}/\d{1,2}', nice, series_summary)
+        except Exception:
+            pass
+
+    # Fallback: just reformat M/D (US format) to month name
+    def _replace(match):
+        m, d = int(match.group(1)), int(match.group(2))
+        try:
+            return f"{_MONTH_NAMES[m - 1]} {_ordinal(d)}"
+        except Exception:
+            return match.group(0)
+
+    return re.sub(r'(\d{1,2})/(\d{1,2})', _replace, series_summary)
+
 # ─────────────────────────────────────────────────────────────────────────────
 # FIREBASE  — read user's tracked teams
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1762,7 +1800,7 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
                 # Playoff series info line (NBA)
                 playoff_html = ""
                 p_note  = m.get("playoff_note", "")
-                p_series = m.get("series_summary", "")
+                p_series = _format_series_summary(m.get("series_summary", ""), m.get("il_date", ""))
                 if p_note or p_series:
                     parts = []
                     if p_note:
@@ -1872,7 +1910,7 @@ def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
                 icon = "🏀" if m["sport"] == "basketball" else "⚽"
                 plain += f"  {icon}  {m['away']} @ {m['home']}  —  {m['league_name']}  —  {m['time']}\n"
                 p_note  = m.get("playoff_note", "")
-                p_series = m.get("series_summary", "")
+                p_series = _format_series_summary(m.get("series_summary", ""), m.get("il_date", ""))
                 if p_note or p_series:
                     parts = [p for p in [p_note, p_series] if p]
                     _joined = " · ".join(parts)
