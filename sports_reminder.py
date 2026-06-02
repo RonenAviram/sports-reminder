@@ -13,12 +13,10 @@ import datetime
 import unicodedata
 import urllib.request
 import urllib.parse
-import smtplib
 import os
 import xml.etree.ElementTree as ET
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.header import Header
+
+from email_sender import send_raw_email, GMAIL_SENDER, GMAIL_APP_PASSWORD
 from player_stats import send_player_stats_emails
 
 # DST-aware timezone support (zoneinfo is stdlib since Python 3.9)
@@ -66,9 +64,6 @@ def _berlin_utc_offset_h(at_utc: datetime.datetime) -> int:
 FIREBASE_PROJECT   = "sports-reminder-55578"
 FIREBASE_API_KEY   = "AIzaSyCd3C1_XN69r8lWUBYPndoGFxmDjnsjX1E"
 FIRESTORE_DOC      = "ronen"          # the doc under configs/
-
-GMAIL_SENDER       = "ronen6213@gmail.com"
-GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")   # set env var or paste here
 
 TIMEZONE_OFFSET    = 3    # Israel (UTC+3)
 
@@ -1351,17 +1346,9 @@ def build_tournament_email_html(matches_by_day: dict) -> str:
 
 def send_tournament_email(to: str, matches_by_day: dict):
     """Send the full tournament schedule email."""
-    if not GMAIL_APP_PASSWORD:
-        print("❌  GMAIL_APP_PASSWORD not set.")
-        return False
-
     total = sum(len(v) for v in matches_by_day.values())
     subject = f"🏆 FIFA World Cup 2026 — Full Schedule — {total} matches"
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = Header(subject, "utf-8")
-    msg["From"]    = GMAIL_SENDER
-    msg["To"]      = to
 
     plain = f"FIFA World Cup 2026 — Full Schedule ({total} matches, Israel time)\n\n"
     for date_str, matches in matches_by_day.items():
@@ -1374,18 +1361,8 @@ def send_tournament_email(to: str, matches_by_day: dict):
                 plain += f"      {t_note}\n"
         plain += "\n"
 
-    msg.attach(MIMEText(plain, "plain", "utf-8"))
-    msg.attach(MIMEText(build_tournament_email_html(matches_by_day), "html", "utf-8"))
-
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_SENDER, to, msg.as_string())
-        print(f"✅  Tournament email sent to {to}")
-        return True
-    except Exception as e:
-        print(f"❌  Tournament email failed: {e}")
-        return False
+    html = build_tournament_email_html(matches_by_day)
+    return send_raw_email(to, subject, html, plain)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1693,11 +1670,6 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
     """
 
 def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict] | None = None):
-    if not GMAIL_APP_PASSWORD:
-        print("❌  GMAIL_APP_PASSWORD not set. Export it as an env variable:")
-        print("    export GMAIL_APP_PASSWORD='xxxx xxxx xxxx xxxx'")
-        return False
-
     _dt2 = datetime.datetime.strptime(today, "%Y-%m-%d")
     date_str = _dt2.strftime("%b ") + str(_dt2.day)
     if not matches and player_stats:
@@ -1717,10 +1689,6 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
         else:
             subject = f"🏟️ {len(matches)} match{'es' if len(matches)!=1 else ''} ahead — {date_str}"
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = Header(subject, "utf-8")
-    msg["From"]    = GMAIL_SENDER
-    msg["To"]      = to
 
     # Plain text fallback
     plain = f"Your matches for {date_str}:\n\n"
@@ -1747,18 +1715,8 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
                           f" · {ps['stl']} stl · {ps['blk']} blk · {ps['to']} to · {ps['pf']} pf\n")
     plain += f"\nEdit your teams: https://sports-reminder-ui.vercel.app"
 
-    msg.attach(MIMEText(plain, "plain", "utf-8"))
-    msg.attach(MIMEText(build_email_html(matches, today, player_stats), "html", "utf-8"))
-
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_SENDER, to, msg.as_string())
-        print(f"✅  Email sent to {to}")
-        return True
-    except Exception as e:
-        print(f"❌  Email failed: {e}")
-        return False
+    html = build_email_html(matches, today, player_stats)
+    return send_raw_email(to, subject, html, plain)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # WEEKLY DIGEST — helper, HTML builder, sender
@@ -1885,19 +1843,11 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
 
 
 def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
-    if not GMAIL_APP_PASSWORD:
-        print("❌  GMAIL_APP_PASSWORD not set.")
-        return False
-
     week_lbl = _week_label(start_date)
     total    = sum(len(v) for v in matches_by_day.values())
     subject  = f"🗓️ No upcoming matches — {week_lbl}" if total == 0 \
                else f"🗓️ Upcoming matches — {week_lbl}"
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = Header(subject, "utf-8")
-    msg["From"]    = GMAIL_SENDER
-    msg["To"]      = to
 
     if total == 0:
         plain = f"No matches this week for your teams. Enjoy the break! ⚽🏀\n\nEdit your teams: https://sports-reminder-ui.vercel.app"
@@ -1918,18 +1868,8 @@ def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
             plain += "\n"
         plain += f"Edit your teams: https://sports-reminder-ui.vercel.app"
 
-    msg.attach(MIMEText(plain, "plain", "utf-8"))
-    msg.attach(MIMEText(build_weekly_email_html(matches_by_day, start_date), "html", "utf-8"))
-
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_SENDER, to, msg.as_string())
-        print(f"✅  Weekly email sent to {to}")
-        return True
-    except Exception as e:
-        print(f"❌  Weekly email failed: {e}")
-        return False
+    html = build_weekly_email_html(matches_by_day, start_date)
+    return send_raw_email(to, subject, html, plain)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
