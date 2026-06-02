@@ -13,11 +13,10 @@ Called from sports_reminder.py via:
 import json
 import time
 import datetime
-import smtplib
 import urllib.request
 import urllib.parse
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+
+from email_sender import send_raw_email
 from email.header import Header
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -678,22 +677,8 @@ def build_player_stats_email_html(players: list[dict], email_type: str) -> str:
 
 def _send_one_email(gmail_user: str, gmail_pass: str, to: str,
                     subject: str, html: str, plain: str) -> bool:
-    """Send a single email via Gmail SMTP."""
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = Header(subject, "utf-8")
-    msg["From"]    = gmail_user
-    msg["To"]      = to
-    msg.attach(MIMEText(plain, "plain", "utf-8"))
-    msg.attach(MIMEText(html, "html", "utf-8"))
-
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(gmail_user, gmail_pass)
-            server.sendmail(gmail_user, to, msg.as_string())
-        return True
-    except Exception as e:
-        print(f"   ❌ Email failed: {e}")
-        return False
+    """Send a single email. gmail_user/gmail_pass kept for backward compat but ignored."""
+    return send_raw_email(to, subject, html, plain)
 
 
 def _build_plain_text(players: list[dict]) -> str:
