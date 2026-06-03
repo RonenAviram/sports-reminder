@@ -131,12 +131,12 @@ def _israel_utc_offset_h(at_utc: datetime.datetime) -> int:
 
 def load_tracked_players(doc_id: str) -> dict:
     """
-    Read tracked_players map from Firestore configs/{doc_id}.
+    Read tracked_players map from Firestore users/{doc_id}.
     Returns {espn_id_str: {name, enabled, tags, team}} for ENABLED players only.
     """
     url = (
         f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/configs/{doc_id}"
+        f"/databases/(default)/documents/users/{doc_id}"
         f"?key={FIREBASE_API_KEY}"
     )
     try:
@@ -180,7 +180,7 @@ def load_player_email_toggles(doc_id: str) -> dict:
     """
     url = (
         f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/configs/{doc_id}"
+        f"/databases/(default)/documents/users/{doc_id}"
         f"?key={FIREBASE_API_KEY}"
     )
     try:
@@ -396,7 +396,7 @@ def update_player_teams(doc_id: str, results: list[dict], players: dict) -> None
     # Read full tracked_players, apply changes, write back
     url = (
         f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/configs/{doc_id}"
+        f"/databases/(default)/documents/users/{doc_id}"
         f"?key={FIREBASE_API_KEY}"
     )
     try:
