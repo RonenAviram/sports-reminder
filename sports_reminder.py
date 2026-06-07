@@ -405,6 +405,13 @@ def today_israel() -> str:
     israel_now = utc_now + datetime.timedelta(hours=_israel_utc_offset_h(utc_now))
     return israel_now.strftime("%Y-%m-%d")
 
+def now_israel_time() -> str:
+    """Return current time in Israel as HH:MM."""
+    utc_now = datetime.datetime.utcnow()
+    israel_now = utc_now + datetime.timedelta(hours=_israel_utc_offset_h(utc_now))
+    return israel_now.strftime("%H:%M")
+
+
 def _format_series_summary(series_summary: str, il_date: str = "") -> str:
     """Reformat dates in NBA series_summary from M/D to 'Month Dth' using Israel date.
 
@@ -1579,7 +1586,7 @@ def fetch_all_world_cup_games(today: str, tracked_names: set[str] | None = None)
     return matches
 
 
-def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool = False) -> dict:
+def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool = False, now_il_time: str = None) -> dict:
     """Fetch matches for 7 days starting from start_date (serial).
     Games are bucketed by their *Israel date* (il_date), not the ESPN query date.
     This ensures NBA overnight games appear on the correct Israel day.
@@ -1679,6 +1686,11 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
         il_date  = match.get("il_date", start_date)
         if il_date < start_date or il_date > end_date:
             continue
+        # Skip matches that already happened on the send day
+        if now_il_time and il_date == start_date:
+            match_time = match.get("time", "")
+            if match_time and match_time < now_il_time:
+                continue
         game_key = f"{match['home']}_{match['away']}_{match['league_id']}"
         if game_key in seen_global:
             continue
@@ -2484,7 +2496,7 @@ def main():
                     print(f"\n   ⏭️  {user['display_name']}: no tracked teams → skipping")
                     continue
                 print(f"\n   👤 {user['display_name']} ({len(tracked)} teams)...")
-                matches_by_day = find_week_matches(tracked, today, world_cup_mode=wc_mode)
+                matches_by_day = find_week_matches(tracked, today, world_cup_mode=wc_mode, now_il_time=None if sim_date else now_israel_time())
                 total = sum(len(v) for v in matches_by_day.values())
                 print(f"      🗓️  {total} match(es) across {len(matches_by_day)} day(s)")
                 if send_mode:
