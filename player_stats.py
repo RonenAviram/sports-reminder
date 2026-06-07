@@ -187,20 +187,20 @@ def load_player_email_toggles(doc_id: str) -> dict:
         data = _fetch_json(url)
     except Exception as e:
         print(f"⚠️  Could not read Firestore toggles: {e}")
-        return {"avdija_dedicated": True, "israeli": True, "general": True}
+        return {"avdija_dedicated": False, "israeli": False, "general": False}
 
     fields = data.get("fields", {})
 
-    def _bool_field(name, default=True):
+    def _bool_field(name, default=False):
         f = fields.get(name, {})
         if "booleanValue" in f:
             return bool(f["booleanValue"])
         return default
 
     return {
-        "avdija_dedicated": _bool_field("avdija_dedicated_email", True),
-        "israeli":          _bool_field("israeli_players_email", True),
-        "general":          _bool_field("player_stats_email", True),
+        "avdija_dedicated": _bool_field("avdija_dedicated_email", False),
+        "israeli":          _bool_field("israeli_players_email", False),
+        "general":          _bool_field("player_stats_email", False),
     }
 
 
