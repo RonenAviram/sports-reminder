@@ -63,7 +63,6 @@ def _berlin_utc_offset_h(at_utc: datetime.datetime) -> int:
 # ─────────────────────────────────────────────────────────────────────────────
 FIREBASE_PROJECT   = "sports-reminder-55578"
 FIREBASE_API_KEY   = "AIzaSyCd3C1_XN69r8lWUBYPndoGFxmDjnsjX1E"
-FIRESTORE_DOC      = "ronen"          # legacy single-user fallback
 USERS_COLLECTION   = "users"          # multi-user: users/{uid}
 GLOBAL_CONFIG_PATH = "config/global"  # global flags (world_cup_mode etc.)
 
@@ -2447,7 +2446,8 @@ def main():
     # ── Full tournament mode (one-off WC schedule) ──────────────────────────
     if tournament_mode:
         print("\n🏆 Full Tournament mode — fetching all FIFA World Cup 2026 games...")
-        tracked = load_tracked_teams(FIRESTORE_DOC)
+        all_u = load_all_users()
+        tracked = all_u[0]["teams"] if all_u else []
         tracked_names = {t["name"] for t in tracked} if tracked else set()
         print(f"   {len(tracked_names)} tracked team(s) will be marked with ⭐")
         matches_by_day = fetch_full_tournament_games(tracked_names)
@@ -2469,12 +2469,8 @@ def main():
     print(f"\n📥 Loading users...")
     users = load_all_users()
     if not users:
-        print("   No active users found. Falling back to single-user mode.")
-        user = load_user_doc(FIRESTORE_DOC)
-        if not user:
-            print(f"   ⚠️  Could not load user doc {FIRESTORE_DOC}")
-            return
-        users = [user]
+        print("   No active users found. Exiting.")
+        return
     print(f"   Found {len(users)} active user(s): {', '.join(u['display_name'] for u in users)}")
 
     # ── Load global config ────────────────────────────────────────────────
