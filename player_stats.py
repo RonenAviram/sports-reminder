@@ -225,10 +225,13 @@ def check_nba_games_yesterday(yesterday_il: str) -> bool:
         return True  # assume games exist on error, to avoid skipping
 
 
-def fetch_player_stats(espn_id: str, yesterday_il: str) -> dict | None:
+def fetch_player_stats(espn_id: str, yesterday_il: str,
+                       target_date: str = "") -> dict | None:
     """
     Fetch last-game stats for a player from ESPN.
     Checks yesterday + today UTC dates to handle overnight Israel games.
+    Accepts games on yesterday_il OR on target_date before 10:00 IL
+    (overnight games that crossed midnight in Israel time).
     Returns stat dict or None if no game found on the target date.
     """
     now_utc = datetime.datetime.utcnow()
@@ -263,8 +266,15 @@ def fetch_player_stats(espn_id: str, yesterday_il: str) -> dict | None:
             except Exception:
                 continue
 
-            # Skip if game date != yesterday (Israel time)
-            if game_date_il_str != yesterday_il:
+            # Skip if game date doesn't match:
+            # - Accept games on yesterday (Israel time)
+            # - Accept overnight games on target_date before 10:00 IL
+            game_hour_il = game_il.hour
+            if game_date_il_str == yesterday_il:
+                pass  # normal match
+            elif target_date and game_date_il_str == target_date and game_hour_il < 10:
+                pass  # overnight game that crossed midnight IL
+            else:
                 continue
 
             # Fetch box score
@@ -350,7 +360,8 @@ def fetch_player_stats(espn_id: str, yesterday_il: str) -> dict | None:
     return None
 
 
-def fetch_all_player_stats(players: dict, yesterday_il: str) -> list[dict]:
+def fetch_all_player_stats(players: dict, yesterday_il: str,
+                           target_date: str = "") -> list[dict]:
     """
     Fetch stats for all enabled players sequentially.
     0.3s delay between calls. Skips on error.
@@ -362,7 +373,7 @@ def fetch_all_player_stats(players: dict, yesterday_il: str) -> list[dict]:
         if i > 0:
             time.sleep(0.3)
         try:
-            stats = fetch_player_stats(espn_id, yesterday_il)
+            stats = fetch_player_stats(espn_id, yesterday_il, target_date)
             if stats:
                 # Ensure player_name falls back to Firestore name
                 if not stats["player_name"]:
@@ -745,7 +756,7 @@ def send_player_stats_emails(doc_id: str, gmail_user: str, gmail_pass: str,
 
     # 5. Fetch all player stats
     print(f"   Fetching stats for {len(players)} players (sequential, 0.3s delay)...")
-    stats = fetch_all_player_stats(players, yesterday_il)
+    stats = fetch_all_player_stats(players, yesterday_il, target_date)
 
     played_count = sum(1 for s in stats if not s.get("dnp"))
     dnp_count    = sum(1 for s in stats if s.get("dnp"))
