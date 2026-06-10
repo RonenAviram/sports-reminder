@@ -37,6 +37,10 @@ def _send_via_resend(to: str, subject: str, html: str, plain: str) -> bool:
         "subject": subject,
         "html": html,
         "text": plain,
+        "headers": {
+            "List-Unsubscribe": "<https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe>",
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+        },
     }
     try:
         resend.Emails.send(params)
