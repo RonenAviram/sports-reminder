@@ -268,11 +268,12 @@ def fetch_player_stats(espn_id: str, yesterday_il: str,
 
             # Skip if game date doesn't match:
             # - Accept games on yesterday (Israel time)
-            # - Accept overnight games on target_date before 10:00 IL
+            # - Accept overnight games on target_date before 08:00 IL
+            #   (latest NBA tip-off is 05:30 IL; 08:00 gives 2.5h margin)
             game_hour_il = game_il.hour
             if game_date_il_str == yesterday_il:
                 pass  # normal match
-            elif target_date and game_date_il_str == target_date and game_hour_il < 10:
+            elif target_date and game_date_il_str == target_date and game_hour_il < 8:
                 pass  # overnight game that crossed midnight IL
             else:
                 continue
