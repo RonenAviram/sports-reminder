@@ -230,14 +230,15 @@ def fetch_player_stats(espn_id: str, yesterday_il: str,
     """
     Fetch last-game stats for a player from ESPN.
     Checks yesterday + today UTC dates to handle overnight Israel games.
-    Accepts games on yesterday_il OR on target_date before 10:00 IL
+    Accepts games on yesterday_il OR on target_date before 08:00 IL
     (overnight games that crossed midnight in Israel time).
     Returns stat dict or None if no game found on the target date.
     """
-    now_utc = datetime.datetime.utcnow()
+    # Derive ESPN dates from yesterday_il to support --simulate-date
+    yesterday_date = datetime.datetime.strptime(yesterday_il, "%Y-%m-%d")
     dates_to_check = [
-        (now_utc - datetime.timedelta(days=1)).strftime("%Y%m%d"),
-        now_utc.strftime("%Y%m%d"),
+        yesterday_date.strftime("%Y%m%d"),
+        (yesterday_date - datetime.timedelta(days=1)).strftime("%Y%m%d"),
     ]
 
     for date_str in dates_to_check:
