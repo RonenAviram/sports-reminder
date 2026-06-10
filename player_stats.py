@@ -674,10 +674,13 @@ def build_player_stats_email_html(players: list[dict], email_type: str) -> str:
           {cards_html}
         </div>
         <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
-          <a href="https://sports-reminder-ui.vercel.app"
+          <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=stats"
              style="font-size:12px; color:#6b7280; text-decoration:none;">
             ✏️ Manage players at sports-reminder-ui.vercel.app
           </a>
+          <div style="margin-top:12px;font-size:12px;color:#999;">
+            <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
+          </div>
         </div>
       </div>
     </body></html>
@@ -713,7 +716,8 @@ def _build_plain_text(players: list[dict]) -> str:
                 f"   FG {ps['fg'].replace('-','/')} · 3PT {ps['three_pt'].replace('-','/')} · FT {ps['ft'].replace('-','/')}"
                 f" · {ps['stl']} stl · {ps['blk']} blk · {ps['to']} to · {ps['pf']} pf"
             )
-    return "\n\n".join(lines) + "\n\nEdit players: https://sports-reminder-ui.vercel.app"
+    return "\n\n".join(lines) + "\n\nEdit players: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=stats
+Unsubscribe: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
