@@ -2493,6 +2493,9 @@ def main():
     if weekly_mode:
         print(f"\n📅 Weekly digest mode — {today}")
         for user in users:
+            if user.get("emails_paused") and not test_mode:
+                print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
+                continue
             if not user.get("weekly_digest") and not test_mode:
                 print(f"\n   ⏭️  {user['display_name']}: weekly digest disabled → skipping")
                 continue
@@ -2517,9 +2520,9 @@ def main():
     if player_stats_m:
         print(f"\n📊 Multi-player stats mode")
         for user in users:
-        if user.get("emails_paused") and not test_mode:
-            print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
-            continue
+            if user.get("emails_paused") and not test_mode:
+                print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
+                continue
             try:
                 print(f"\n   👤 {user['display_name']}...")
                 send_player_stats_emails(
