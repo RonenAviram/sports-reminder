@@ -716,7 +716,7 @@ def _build_plain_text(players: list[dict]) -> str:
                 f"   FG {ps['fg'].replace('-','/')} · 3PT {ps['three_pt'].replace('-','/')} · FT {ps['ft'].replace('-','/')}"
                 f" · {ps['stl']} stl · {ps['blk']} blk · {ps['to']} to · {ps['pf']} pf"
             )
-    return "\n\n".join(lines) + "\n\nEdit players: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=stats
+    return "\n\n".join(lines) + "\n\nEdit players: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=stats"
 Unsubscribe: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe"
 
 
