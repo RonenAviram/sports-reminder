@@ -2106,8 +2106,8 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
             pm_val       = ps.get("plus_minus", "?")
             try:
                 pm_int = int(pm_val)
-                    pm_color = "#16a34a" if pm_int > 0 else ("#dc2626" if pm_int < 0 else "#64748b")
-                    pm_display = f"+{pm_int}" if pm_int > 0 else str(pm_int)
+                pm_color = "#16a34a" if pm_int > 0 else ("#dc2626" if pm_int < 0 else "#64748b")
+                pm_display = f"+{pm_int}" if pm_int > 0 else str(pm_int)
             except (ValueError, TypeError):
                 pm_color   = "#64748b"
                 pm_display = pm_val
