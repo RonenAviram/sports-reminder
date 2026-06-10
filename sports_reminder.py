@@ -1841,10 +1841,13 @@ def build_tournament_email_html(matches_by_day: dict) -> str:
         </div>
         <div>{days_html}</div>
         <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
-          <a href="https://sports-reminder-ui.vercel.app"
+          <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=tournament"
              style="font-size:12px; color:#6b7280; text-decoration:none;">
             ✏️ Edit your teams at sports-reminder-ui.vercel.app
           </a>
+          <div style="margin-top:12px;font-size:12px;color:#999;">
+            <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
+          </div>
         </div>
       </div>
     </body></html>
@@ -2167,10 +2170,13 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
           {player_stats_html}
         </div>
         <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
-          <a href="https://sports-reminder-ui.vercel.app"
+          <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=daily"
              style="font-size:12px; color:#6b7280; text-decoration:none;">
             ✏️ Edit your teams at sports-reminder-ui.vercel.app
           </a>
+          <div style="margin-top:12px;font-size:12px;color:#999;">
+            <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
+          </div>
         </div>
       </div>
     </body></html>
@@ -2220,7 +2226,7 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
                           f"   {ps['min']} min · {ps['pts']} pts · {ps['reb']} reb · {ps['ast']} ast · {pm_str}\n"
                           f"   FG {ps['fg'].replace('-','/')} · 3PT {ps['three_pt'].replace('-','/')} · FT {ps['ft'].replace('-','/')}"
                           f" · {ps['stl']} stl · {ps['blk']} blk · {ps['to']} to · {ps['pf']} pf\n")
-    plain += f"\nEdit your teams: https://sports-reminder-ui.vercel.app"
+    plain += f"\nEdit your teams: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=daily"
 
     html = build_email_html(matches, today, player_stats)
     return send_raw_email(to, subject, html, plain)
@@ -2339,10 +2345,13 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
         </div>
         {body_html}
         <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
-          <a href="https://sports-reminder-ui.vercel.app"
+          <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=weekly"
              style="font-size:12px; color:#6b7280; text-decoration:none;">
             ✏️ Edit your teams at sports-reminder-ui.vercel.app
           </a>
+          <div style="margin-top:12px;font-size:12px;color:#999;">
+            <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
+          </div>
         </div>
       </div>
     </body></html>
@@ -2357,7 +2366,7 @@ def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
 
 
     if total == 0:
-        plain = f"No matches this week for your teams. Enjoy the break! ⚽🏀\n\nEdit your teams: https://sports-reminder-ui.vercel.app"
+        plain = f"No matches this week for your teams. Enjoy the break! ⚽🏀\n\nEdit your teams: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=weekly"
     else:
         plain = f"Upcoming matches — {week_lbl} (Israel time)\n\n"
         for date_str, matches in matches_by_day.items():
@@ -2373,7 +2382,7 @@ def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
                     _joined = " · ".join(parts)
                     plain += f"      {_joined}\n"
             plain += "\n"
-        plain += f"Edit your teams: https://sports-reminder-ui.vercel.app"
+        plain += f"Edit your teams: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=weekly"
 
     html = build_weekly_email_html(matches_by_day, start_date)
     return send_raw_email(to, subject, html, plain)
