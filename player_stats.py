@@ -567,8 +567,9 @@ def build_player_stat_card_html(ps: dict) -> str:
     result_text  = "Win" if ps["won"] else "Loss"
     pm_val = ps.get("plus_minus", "0")
     try:
-        pm_color = "#16a34a" if int(pm_val) > 0 else ("#dc2626" if int(pm_val) < 0 else "#64748b")
-        pm_display = f"+{pm_val}" if int(pm_val) > 0 else str(pm_val)
+        pm_int = int(pm_val)
+            pm_color = "#16a34a" if pm_int > 0 else ("#dc2626" if pm_int < 0 else "#64748b")
+            pm_display = f"+{pm_int}" if pm_int > 0 else str(pm_int)
     except (ValueError, TypeError):
         pm_color = "#64748b"
         pm_display = pm_val
