@@ -520,6 +520,7 @@ def load_user_doc(doc_id: str) -> dict:
         "avdija_dedicated_email": _firestore_bool(fields, "avdija_dedicated_email", False),
         "israeli_players_email":  _firestore_bool(fields, "israeli_players_email", False),
         "player_stats_email":     _firestore_bool(fields, "player_stats_email", False),
+        "emails_paused": _firestore_bool(fields, "emails_paused", False),
     }
 
 
@@ -2516,6 +2517,9 @@ def main():
     if player_stats_m:
         print(f"\n📊 Multi-player stats mode")
         for user in users:
+        if user.get("emails_paused") and not test_mode:
+            print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
+            continue
             try:
                 print(f"\n   👤 {user['display_name']}...")
                 send_player_stats_emails(
@@ -2553,6 +2557,9 @@ def main():
 
     # 3. Per-user: filter matches → send email
     for user in users:
+        if user.get("emails_paused") and not test_mode:
+            print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
+            continue
         try:
             tracked = user["teams"]
             if not tracked and not wc_mode:
