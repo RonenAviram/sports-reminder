@@ -2426,9 +2426,16 @@ def main():
         if a == "--simulate-date" and i + 1 < len(args):
             sim_date = args[i + 1]
     today = sim_date if sim_date else today_israel()
+    # --test-user EMAIL: send only to this user (for QA without spamming all users)
+    test_user_email = None
+    for i, a in enumerate(args):
+        if a == "--test-user" and i + 1 < len(args):
+            test_user_email = args[i + 1]
 
     print(f"\n🗓️  Sports Reminder — {today}")
     print("=" * 50)
+    if test_user_email:
+        print(f"\U0001f9ea TEST USER MODE: only sending to {test_user_email}")
 
     if mock_mode:
         print("\n🧪 MOCK MODE — using fake teams & games (no network calls)\n")
@@ -2459,7 +2466,9 @@ def main():
     # ── Full tournament mode (one-off WC schedule) ──────────────────────────
     if tournament_mode:
         print("\n🏆 Full Tournament mode — fetching all FIFA World Cup 2026 games...")
-        all_u = load_all_users()
+        if test_user_email:
+            all_u = [u for u in all_u if u.get("email","").lower() == test_user_email.lower()]
+                all_u = load_all_users()
         tracked = all_u[0]["teams"] if all_u else []
         tracked_names = {t["name"] for t in tracked} if tracked else set()
         print(f"   {len(tracked_names)} tracked team(s) found")
@@ -2480,7 +2489,10 @@ def main():
 
     # ── Load all users ──────────────────────────────────────────────────────
     print(f"\n📥 Loading users...")
-    users = load_all_users()
+    if test_user_email:
+        users = [u for u in users if u.get("email","").lower() == test_user_email.lower()]
+        print(f"   \U0001f9ea TEST MODE: filtered to {len(users)} user(s) matching {test_user_email}")
+        users = load_all_users()
     if not users:
         print("   No active users found. Exiting.")
         return
