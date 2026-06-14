@@ -1805,9 +1805,9 @@ def build_tournament_email_html(matches_by_day: dict) -> str:
             tracked_t = m.get("tracked_team", "")
             if tracked_t:
                 if names_match(m["home"], tracked_t):
-                    h_disp += " ⭐"
+                    h_disp = "⭐ " + h_disp
                 elif names_match(m["away"], tracked_t):
-                    a_disp += " ⭐"
+                    a_disp = "⭐ " + a_disp
             matchup_str = (f'{h_disp}<br>'
                            f'<span style="font-size:12px; color:#888;">Vs</span><br>'
                            f'{a_disp}')
@@ -2064,9 +2064,9 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
             tracked = m.get("tracked_team", "")
             if tracked:
                 if names_match(m["home"], tracked):
-                    home_display += " ⭐"
+                    home_display = "⭐ " + home_display
                 elif names_match(m["away"], tracked):
-                    away_display += " ⭐"
+                    away_display = "⭐ " + away_display
             matchup_html = (f'{home_display}<br>'
                            f'<span style="font-size:13px; color:#888;">Vs</span><br>'
                            f'{away_display}')
@@ -2306,9 +2306,9 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
                     tracked_t = m.get("tracked_team", "")
                     if tracked_t:
                         if names_match(m["home"], tracked_t):
-                            h_disp += " ⭐"
+                            h_disp = "⭐ " + h_disp
                         elif names_match(m["away"], tracked_t):
-                            a_disp += " ⭐"
+                            a_disp = "⭐ " + a_disp
                     matchup_str = (f'{h_disp}<br>'
                                    f'<span style="font-size:12px; color:#888;">Vs</span><br>'
                                    f'{a_disp}')
