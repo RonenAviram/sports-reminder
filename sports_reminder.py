@@ -1562,7 +1562,7 @@ def find_my_matches(tracked: list[dict], today: str) -> list[dict]:
 def fetch_all_world_cup_games(today: str, tracked_names: set[str] | None = None) -> list[dict]:
     """Fetch ALL World Cup games for today (world_cup_mode).
     Returns match dicts ready for the email, with tracked_team/star markers.
-    tracked_names: set of tracked team names — these get a ⭐ marker."""
+    tracked_names: set of tracked team names (used for WC filtering)."""
     games = fetch_todays_games("fifa_world_cup", today)
     if not games:
         return []
@@ -1712,7 +1712,7 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
 def fetch_full_tournament_games(tracked_names: set) -> dict:
     """Fetch ALL FIFA World Cup 2026 games from June 11 to July 19.
     Returns dict: date_str -> list[match], sorted by date.
-    tracked_names is used to mark ⭐ on tracked teams."""
+    tracked_names is used to filter tracked teams."""
     import time as _time
 
     start_dt = datetime.datetime(2026, 6, 11)
@@ -1805,9 +1805,9 @@ def build_tournament_email_html(matches_by_day: dict) -> str:
             tracked_t = m.get("tracked_team", "")
             if tracked_t:
                 if names_match(m["home"], tracked_t):
-                    h_disp = "⭐ " + h_disp
+                    h_disp = h_disp
                 elif names_match(m["away"], tracked_t):
-                    a_disp = "⭐ " + a_disp
+                    a_disp = a_disp
             matchup_str = (f'{h_disp}<br>'
                            f'<span style="font-size:12px; color:#888;">Vs</span><br>'
                            f'{a_disp}')
@@ -2064,9 +2064,9 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
             tracked = m.get("tracked_team", "")
             if tracked:
                 if names_match(m["home"], tracked):
-                    home_display = "⭐ " + home_display
+                    home_display = home_display
                 elif names_match(m["away"], tracked):
-                    away_display = "⭐ " + away_display
+                    away_display = away_display
             matchup_html = (f'{home_display}<br>'
                            f'<span style="font-size:13px; color:#888;">Vs</span><br>'
                            f'{away_display}')
@@ -2306,9 +2306,9 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
                     tracked_t = m.get("tracked_team", "")
                     if tracked_t:
                         if names_match(m["home"], tracked_t):
-                            h_disp = "⭐ " + h_disp
+                            h_disp = h_disp
                         elif names_match(m["away"], tracked_t):
-                            a_disp = "⭐ " + a_disp
+                            a_disp = a_disp
                     matchup_str = (f'{h_disp}<br>'
                                    f'<span style="font-size:12px; color:#888;">Vs</span><br>'
                                    f'{a_disp}')
@@ -2462,7 +2462,7 @@ def main():
         all_u = load_all_users()
         tracked = all_u[0]["teams"] if all_u else []
         tracked_names = {t["name"] for t in tracked} if tracked else set()
-        print(f"   {len(tracked_names)} tracked team(s) will be marked with ⭐")
+        print(f"   {len(tracked_names)} tracked team(s) found")
         matches_by_day = fetch_full_tournament_games(tracked_names)
         total = sum(len(v) for v in matches_by_day.values())
         print(f"\n🏆 {total} match(es) found across {len(matches_by_day)} day(s)")
