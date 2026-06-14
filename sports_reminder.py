@@ -1667,6 +1667,8 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
                         if names_match(game["home"], tname) or names_match(game["away"], tname):
                             t_team = tname
                             break
+                    if not t_team:
+                        continue
                     all_matches.append({
                         **game,
                         "tracked_team": t_team,
@@ -2583,11 +2585,13 @@ def main():
                 for wc in wc_games:
                     key = f"{wc['home']}_{wc['away']}_fifa_world_cup"
                     if key not in existing_keys:
-                        wc_copy = {**wc}
+                        wc_copy = {**wc, "tracked_team": ""}
                         for tname in user_tracked_names:
                             if names_match(wc_copy["home"], tname) or names_match(wc_copy["away"], tname):
                                 wc_copy["tracked_team"] = tname
                                 break
+                        if not wc_copy["tracked_team"]:
+                            continue
                         matches.append(wc_copy)
                         existing_keys.add(key)
                     else:
