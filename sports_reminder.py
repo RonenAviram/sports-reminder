@@ -2466,9 +2466,9 @@ def main():
     # ── Full tournament mode (one-off WC schedule) ──────────────────────────
     if tournament_mode:
         print("\n🏆 Full Tournament mode — fetching all FIFA World Cup 2026 games...")
+        all_u = load_all_users()
         if test_user_email:
             all_u = [u for u in all_u if u.get("email","").lower() == test_user_email.lower()]
-                all_u = load_all_users()
         tracked = all_u[0]["teams"] if all_u else []
         tracked_names = {t["name"] for t in tracked} if tracked else set()
         print(f"   {len(tracked_names)} tracked team(s) found")
