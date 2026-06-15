@@ -695,7 +695,7 @@ def build_player_stats_email_html(players: list[dict], email_type: str) -> str:
 def _send_one_email(gmail_user: str, gmail_pass: str, to: str,
                     subject: str, html: str, plain: str) -> bool:
     """Send a single email. gmail_user/gmail_pass kept for backward compat but ignored."""
-    return send_raw_email(to, subject, html, plain)
+    return send_raw_email(to, subject, html, plain, email_type="stats")
 
 
 def _build_plain_text(players: list[dict]) -> str:
