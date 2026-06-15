@@ -7,9 +7,15 @@ here without touching any business logic.
 Provider selection (automatic):
   - If RESEND_API_KEY is set  → Resend API  (preferred)
   - If GMAIL_APP_PASSWORD set → Gmail SMTP  (legacy fallback)
+
+Email logging:
+  Every send attempt is logged to Firestore collection 'email_logs'
+  with timestamp, recipient, type, status, subject, and provider.
+  Logging is best-effort — failures are printed but never block sending.
 """
 
 import os
+import datetime
 
 # ── Config ───────────────────────────────────────────────────────────────────────────────
 
@@ -72,7 +78,45 @@ def _send_via_gmail(to: str, subject: str, html: str, plain: str) -> bool:
         return False
 
 
-def send_raw_email(to: str, subject: str, html: str, plain: str) -> bool:
+# ── Firestore logging (best-effort) ──────────────────────────────────────────────
+
+_firestore_db = None
+
+def _get_firestore_db():
+    """Lazy-init Firestore client. Returns None if unavailable."""
+    global _firestore_db
+    if _firestore_db is not None:
+        return _firestore_db
+    try:
+        from google.cloud import firestore as _fs
+        _firestore_db = _fs.Client()
+        return _firestore_db
+    except Exception as e:
+        print(f"⚠️  Firestore not available for email logging: {e}")
+        return None
+
+def _log_email(to: str, subject: str, email_type: str, status: str,
+               provider: str, error: str = ""):
+    """Log email send attempt to Firestore. Best-effort — never raises."""
+    try:
+        db = _get_firestore_db()
+        if db is None:
+            return
+        db.collection("email_logs").add({
+            "to": to,
+            "subject": subject,
+            "email_type": email_type,
+            "status": status,
+            "provider": provider,
+            "error": error,
+            "timestamp": datetime.datetime.utcnow(),
+        })
+    except Exception as e:
+        print(f"⚠️  Email log write failed: {e}")
+
+
+def send_raw_email(to: str, subject: str, html: str, plain: str,
+                   email_type: str = "unknown") -> bool:
     """
     Send a single email.
 
@@ -82,20 +126,28 @@ def send_raw_email(to: str, subject: str, html: str, plain: str) -> bool:
       - Neither → error
 
     Args:
-        to:      recipient email address
-        subject: email subject (may contain Unicode / emoji)
-        html:    HTML body
-        plain:   plain-text fallback body
+        to:         recipient email address
+        subject:    email subject (may contain Unicode / emoji)
+        html:       HTML body
+        plain:      plain-text fallback body
+        email_type: label for logging — 'morning', 'stats', 'weekly', etc.
 
     Returns:
         True on success, False on failure.
     """
     if RESEND_API_KEY:
-        return _send_via_resend(to, subject, html, plain)
+        ok = _send_via_resend(to, subject, html, plain)
+        _log_email(to, subject, email_type, "sent" if ok else "failed", "resend",
+                   "" if ok else "send failed")
+        return ok
 
     if GMAIL_APP_PASSWORD:
-        return _send_via_gmail(to, subject, html, plain)
+        ok = _send_via_gmail(to, subject, html, plain)
+        _log_email(to, subject, email_type, "sent" if ok else "failed", "gmail",
+                   "" if ok else "send failed")
+        return ok
 
     print("❌  No email provider configured.")
     print("    Set RESEND_API_KEY (preferred) or GMAIL_APP_PASSWORD (legacy).")
+    _log_email(to, subject, email_type, "failed", "none", "no provider configured")
     return False
