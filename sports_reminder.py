@@ -1875,7 +1875,7 @@ def send_tournament_email(to: str, matches_by_day: dict):
         plain += "\n"
 
     html = build_tournament_email_html(matches_by_day)
-    return send_raw_email(to, subject, html, plain)
+    return send_raw_email(to, subject, html, plain, email_type="tournament")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2233,7 +2233,7 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
     plain += f"\nEdit your teams: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=daily"
 
     html = build_email_html(matches, today, player_stats)
-    return send_raw_email(to, subject, html, plain)
+    return send_raw_email(to, subject, html, plain, email_type="morning")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # WEEKLY DIGEST — helper, HTML builder, sender
@@ -2389,7 +2389,7 @@ def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
         plain += f"Edit your teams: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=weekly"
 
     html = build_weekly_email_html(matches_by_day, start_date)
-    return send_raw_email(to, subject, html, plain)
+    return send_raw_email(to, subject, html, plain, email_type="weekly")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
