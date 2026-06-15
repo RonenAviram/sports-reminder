@@ -2489,10 +2489,10 @@ def main():
 
     # ── Load all users ──────────────────────────────────────────────────────
     print(f"\n📥 Loading users...")
+    users = load_all_users()
     if test_user_email:
         users = [u for u in users if u.get("email","").lower() == test_user_email.lower()]
         print(f"   \U0001f9ea TEST MODE: filtered to {len(users)} user(s) matching {test_user_email}")
-        users = load_all_users()
     if not users:
         print("   No active users found. Exiting.")
         return
