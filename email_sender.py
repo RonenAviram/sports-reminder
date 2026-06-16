@@ -28,13 +28,13 @@ GMAIL_SENDER       = "ronen6213@gmail.com"
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 
 
-def _send_via_resend(to: str, subject: str, html: str, plain: str) -> bool:
-    """Send email via Resend API."""
+def _send_via_resend(to: str, subject: str, html: str, plain: str) -> tuple:
+    """Send email via Resend API. Returns (success, resend_email_id)."""
     try:
         import resend
     except ImportError:
         print("❌  resend package not installed. Run: pip install resend")
-        return False
+        return False, ""
 
     resend.api_key = RESEND_API_KEY
     params = {
@@ -45,12 +45,13 @@ def _send_via_resend(to: str, subject: str, html: str, plain: str) -> bool:
         "text": plain,
     }
     try:
-        resend.Emails.send(params)
-        print(f"✅  Email sent to {to} (Resend)")
-        return True
+        resp = resend.Emails.send(params)
+        email_id = getattr(resp, "id", "") or (resp.get("id", "") if isinstance(resp, dict) else "")
+        print(f"✅  Email sent to {to} (Resend, id={email_id})")
+        return True, email_id
     except Exception as e:
         print(f"❌  Email failed ({to}, Resend): {e}")
-        return False
+        return False, ""
 
 
 def _send_via_gmail(to: str, subject: str, html: str, plain: str) -> bool:
@@ -96,13 +97,13 @@ def _get_firestore_db():
         return None
 
 def _log_email(to: str, subject: str, email_type: str, status: str,
-               provider: str, error: str = ""):
+               provider: str, error: str = "", resend_email_id: str = ""):
     """Log email send attempt to Firestore. Best-effort — never raises."""
     try:
         db = _get_firestore_db()
         if db is None:
             return
-        db.collection("email_logs").add({
+        doc = {
             "to": to,
             "subject": subject,
             "email_type": email_type,
@@ -110,7 +111,10 @@ def _log_email(to: str, subject: str, email_type: str, status: str,
             "provider": provider,
             "error": error,
             "timestamp": datetime.datetime.utcnow(),
-        })
+        }
+        if resend_email_id:
+            doc["resend_email_id"] = resend_email_id
+        db.collection("email_logs").add(doc)
     except Exception as e:
         print(f"⚠️  Email log write failed: {e}")
 
@@ -136,9 +140,9 @@ def send_raw_email(to: str, subject: str, html: str, plain: str,
         True on success, False on failure.
     """
     if RESEND_API_KEY:
-        ok = _send_via_resend(to, subject, html, plain)
+        ok, resend_id = _send_via_resend(to, subject, html, plain)
         _log_email(to, subject, email_type, "sent" if ok else "failed", "resend",
-                   "" if ok else "send failed")
+                   "" if ok else "send failed", resend_email_id=resend_id)
         return ok
 
     if GMAIL_APP_PASSWORD:
