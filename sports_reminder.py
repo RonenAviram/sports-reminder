@@ -411,6 +411,21 @@ def now_israel_time() -> str:
     return israel_now.strftime("%H:%M")
 
 
+def _compute_display_date(il_date: str, time_str: str) -> str:
+    """Games between 00:00-04:59 Israel time belong to the previous evening.
+    Returns il_date - 1 day for those games, otherwise il_date unchanged.
+    This ensures e.g. a 00:00 IL game on June 23 displays under June 22."""
+    if time_str == "TBD":
+        return il_date
+    try:
+        h = int(time_str.split(":")[0])
+        if 0 <= h < 5:
+            dt = datetime.datetime.strptime(il_date, "%Y-%m-%d")
+            return (dt - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+    except Exception:
+        pass
+    return il_date
+
 def _format_series_summary(series_summary: str, il_date: str = "") -> str:
     """Reformat dates in NBA series_summary from M/D to 'Month Dth' using Israel date.
 
@@ -1136,6 +1151,8 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
 
         # Israel date of this game (used by weekly digest for correct bucketing)
         il_date = game_local.strftime("%Y-%m-%d") if game_local else today
+        # Display date: games 00:00-04:59 IL shown under previous day
+        display_date = _compute_display_date(il_date, time_str)
 
         # Playoff series info (NBA)
         series_summary = ""
@@ -1164,6 +1181,7 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
             "away_abbr": away["team"].get("abbreviation", ""),
             "time":      time_str,
             "il_date":   il_date,
+            "display_date": display_date,
             "status":    comp.get("status", {}).get("type", {}).get("description", ""),
             "league_id": league_id,
             "series_summary": series_summary,
@@ -1246,6 +1264,7 @@ def fetch_euroleague_games(league_id: str, today: str) -> list[dict]:
             "time":      time_str,
             "status":    "Scheduled",
             "league_id": league_id,
+            "display_date": _compute_display_date(today, time_str),
         })
     return games
 
@@ -1295,6 +1314,7 @@ def fetch_tsdb_games(league_id: str, today: str) -> list[dict]:
             "time":      time_str,
             "status":    ev.get("strStatus", "Scheduled"),
             "league_id": league_id,
+            "display_date": _compute_display_date(today, time_str),
         })
     return games
 
@@ -1548,7 +1568,7 @@ def filter_matches_for_user(tracked: list[dict], games_by_league: dict, today: s
                 })
                 seen.add(game_key)
 
-    matches.sort(key=lambda m: (m.get("il_date", today), m["time"]))
+    matches.sort(key=lambda m: (m.get("display_date", m.get("il_date", today)), m["time"]))
     return matches
 
 
@@ -1588,8 +1608,8 @@ def fetch_all_world_cup_games(today: str, tracked_names: set[str] | None = None)
 
 def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool = False, now_il_time: str = None) -> dict:
     """Fetch matches for 7 days starting from start_date (serial).
-    Games are bucketed by their *Israel date* (il_date), not the ESPN query date.
-    This ensures NBA overnight games appear on the correct Israel day.
+    Games are bucketed by their *display date* — for games 00:00-04:59 IL this is
+    il_date minus 1 day (they belong to the previous evening), others use il_date.
     If world_cup_mode=True, also fetches ALL World Cup games for the week.
     Returns dict: date_str -> list[match], sorted by date, only days with matches."""
     import time as _time
@@ -1625,6 +1645,8 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
                 # EuroLeague / TSDB games don't carry il_date — use the query date
                 if "il_date" not in game:
                     game["il_date"] = date_str
+                if "display_date" not in game:
+                    game["display_date"] = _compute_display_date(game["il_date"], game.get("time", "TBD"))
                 game_key = f"{game['home']}_{game['away']}_{lid}"
                 if game_key in seen_local:
                     continue
@@ -1661,6 +1683,8 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
                 for game in wc_games:
                     if "il_date" not in game:
                         game["il_date"] = d
+                    if "display_date" not in game:
+                        game["display_date"] = _compute_display_date(game["il_date"], game.get("time", "TBD"))
                     # Check if tracked
                     t_team = ""
                     for tname in tracked_names:
@@ -1681,12 +1705,12 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
             if i < len(espn_dates) - 1:
                 _time.sleep(0.5)
 
-    # Re-bucket by Israel date; deduplicate globally; keep only [start_date, end_date]
+    # Re-bucket by display_date (games 00:00-04:59 IL shown under previous day); deduplicate globally; keep only [start_date, end_date]
     results: dict[str, list] = {}
     seen_global: set = set()
     for match in all_matches:
-        il_date  = match.get("il_date", start_date)
-        if il_date < start_date or il_date > end_date:
+        dd = match.get("display_date", match.get("il_date", start_date))
+        if dd < start_date or dd > end_date:
             continue
         # Skip matches that already happened on the send day
         if now_il_time and il_date == start_date:
@@ -1697,7 +1721,7 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
         if game_key in seen_global:
             continue
         seen_global.add(game_key)
-        results.setdefault(il_date, []).append(match)
+        results.setdefault(dd, []).append(match)
 
     # Sort matches within each day by time
     for day_matches in results.values():
@@ -1735,6 +1759,8 @@ def fetch_full_tournament_games(tracked_names: set) -> dict:
             for game in games:
                 if "il_date" not in game:
                     game["il_date"] = date_str
+                if "display_date" not in game:
+                    game["display_date"] = _compute_display_date(game["il_date"], game.get("time", "TBD"))
                 game_key = f"{game['home']}_{game['away']}"
                 if game_key in seen:
                     continue
@@ -2038,10 +2064,10 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
             tournament_html = f'<div style="font-size:11px; color:#b45309; margin-top:2px; font-style:italic;">{t_note}</div>'
         # Time display — TBD gets a muted style; "If Necessary" gets extra note
         is_if_necessary = "if necessary" in p_note.lower()
-        # Show Israel date next to time when game falls on a different Israel date
-        game_il_date = m.get("il_date", today)
-        if game_il_date != today and m["time"] != "TBD":
-            _g_dt = datetime.datetime.strptime(game_il_date, "%Y-%m-%d")
+        # Show Israel date next to time when game falls on a different display date
+        game_display_date = m.get("display_date", m.get("il_date", today))
+        if game_display_date != today and m["time"] != "TBD":
+            _g_dt = datetime.datetime.strptime(game_display_date, "%Y-%m-%d")
             _g_day_name = _g_dt.strftime("%a")  # e.g. "Tue"
             _g_date_str = f"{_g_day_name} {_g_dt.day}/{_g_dt.month}"
             date_prefix = f'<div style="font-size:11px; color:#6b7280; margin-bottom:1px;">{_g_date_str}</div>'
@@ -2615,7 +2641,7 @@ def main():
                                m["home"] == wc["home"] and m["away"] == wc["away"]:
                                 m["is_world_cup"] = True
                                 break
-                matches.sort(key=lambda m: (m.get("il_date", today), m["time"]))
+                matches.sort(key=lambda m: (m.get("display_date", m.get("il_date", today)), m["time"]))
 
             wc_count = sum(1 for m in matches if m.get("is_world_cup") or m.get("league_id") == "fifa_world_cup")
             other_count = len(matches) - wc_count
