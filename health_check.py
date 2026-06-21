@@ -472,10 +472,6 @@ def send_alert_email(results: list[dict]):
         plain_lines.append(f"❌ {r['api']} / {r['league']}: {r['status']} — {r['error']}")
     plain = "\n".join(plain_lines)
 
-    # Debug: print RESEND_API_KEY info before sending
-    import os as _os
-    _rk = _os.environ.get("RESEND_API_KEY", "")
-    print(f"RESEND_API_KEY: len={len(_rk)}, first8={_rk[:8]}, last4={_rk[-4:] if _rk else 'EMPTY'}")
     ok = send_raw_email(ADMIN_EMAIL, subject, html, plain, email_type="health_alert")
     if ok:
         print(f"\xf0\x9f\x93\xa7 Alert email sent to {ADMIN_EMAIL}")
