@@ -97,7 +97,8 @@ def _get_firestore_db():
         return None
 
 def _log_email(to: str, subject: str, email_type: str, status: str,
-               provider: str, error: str = "", resend_email_id: str = ""):
+               provider: str, error: str = "", resend_email_id: str = "",
+               synthetic: bool = False):
     """Log email send attempt to Firestore. Best-effort — never raises."""
     try:
         db = _get_firestore_db()
@@ -109,6 +110,7 @@ def _log_email(to: str, subject: str, email_type: str, status: str,
             "email_type": email_type,
             "status": status,
             "provider": provider,
+            "synthetic": synthetic,
             "error": error,
             "timestamp": datetime.datetime.utcnow(),
         }
@@ -120,7 +122,7 @@ def _log_email(to: str, subject: str, email_type: str, status: str,
 
 
 def send_raw_email(to: str, subject: str, html: str, plain: str,
-                   email_type: str = "unknown") -> bool:
+                   email_type: str = "unknown", synthetic: bool = False) -> bool:
     """
     Send a single email.
 
@@ -142,16 +144,16 @@ def send_raw_email(to: str, subject: str, html: str, plain: str,
     if RESEND_API_KEY:
         ok, resend_id = _send_via_resend(to, subject, html, plain)
         _log_email(to, subject, email_type, "sent" if ok else "failed", "resend",
-                   "" if ok else "send failed", resend_email_id=resend_id)
+                   "" if ok else "send failed", resend_email_id=resend_id, synthetic=synthetic)
         return ok
 
     if GMAIL_APP_PASSWORD:
         ok = _send_via_gmail(to, subject, html, plain)
         _log_email(to, subject, email_type, "sent" if ok else "failed", "gmail",
-                   "" if ok else "send failed")
+                   "" if ok else "send failed", synthetic=synthetic)
         return ok
 
     print("❌  No email provider configured.")
     print("    Set RESEND_API_KEY (preferred) or GMAIL_APP_PASSWORD (legacy).")
-    _log_email(to, subject, email_type, "failed", "none", "no provider configured")
+    _log_email(to, subject, email_type, "failed", "none", "no provider configured", synthetic=synthetic)
     return False
