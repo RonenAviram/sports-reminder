@@ -681,6 +681,7 @@ def build_player_stats_email_html(players: list[dict], email_type: str) -> str:
           </a>
           <div style="margin-top:12px;font-size:12px;color:#999;">
             <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
+          <div style="margin-top:8px;text-align:center;"><a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:#25D366;text-decoration:none;font-size:12px;">📱 Get updates on WhatsApp</a></div>
           </div>
         </div>
       </div>
