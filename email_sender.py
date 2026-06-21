@@ -123,6 +123,9 @@ def _log_email(to: str, subject: str, email_type: str, status: str,
 
 def send_raw_email(to: str, subject: str, html: str, plain: str,
                    email_type: str = "unknown", synthetic: bool = False) -> bool:
+    # Auto-detect synthetic from email address
+    if "+synthetic" in to:
+        synthetic = True
     """
     Send a single email.
 
