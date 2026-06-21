@@ -1850,6 +1850,7 @@ def build_tournament_email_html(matches_by_day: dict) -> str:
           </a>
           <div style="margin-top:12px;font-size:12px;color:#999;">
             <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
+          <div style="margin-top:8px;text-align:center;"><a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:#25D366;text-decoration:none;font-size:12px;">📱 Get updates on WhatsApp</a></div>
           </div>
         </div>
       </div>
@@ -2180,6 +2181,7 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
           </a>
           <div style="margin-top:12px;font-size:12px;color:#999;">
             <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
+          <div style="margin-top:8px;text-align:center;"><a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:#25D366;text-decoration:none;font-size:12px;">📱 Get updates on WhatsApp</a></div>
           </div>
         </div>
       </div>
@@ -2355,6 +2357,7 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
           </a>
           <div style="margin-top:12px;font-size:12px;color:#999;">
             <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
+          <div style="margin-top:8px;text-align:center;"><a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:#25D366;text-decoration:none;font-size:12px;">📱 Get updates on WhatsApp</a></div>
           </div>
         </div>
       </div>
