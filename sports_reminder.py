@@ -536,6 +536,7 @@ def load_user_doc(doc_id: str) -> dict:
         "israeli_players_email":  _firestore_bool(fields, "israeli_players_email", False),
         "player_stats_email":     _firestore_bool(fields, "player_stats_email", False),
         "emails_paused": _firestore_bool(fields, "emails_paused", False),
+        "synthetic": _firestore_bool(fields, "synthetic", False),
     }
 
 
@@ -2456,6 +2457,64 @@ MOCK_MATCHES = [
      "tracked_team": "FC Barcelona",     "league_name": "Champions League",  "sport": "soccer"},
 ]
 
+
+# ── Synthetic user health check ──────────────────────────────────────────────────────────────
+
+SYNTHETIC_ALERT_EMAIL = "ronen6213@gmail.com"
+
+def _send_synthetic_alert(mode, today, failures):
+    """Send alert email to admin when synthetic user test fails."""
+    if not failures:
+        return
+    timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    report_lines = [
+        "=" * 60,
+        "SYNTHETIC TEST FAILURE REPORT",
+        "=" * 60,
+        f"Mode: {mode}",
+        f"Date: {today}",
+        f"Timestamp: {timestamp}",
+        f"Failures: {len(failures)}",
+        "",
+    ]
+    for i, f in enumerate(failures, 1):
+        report_lines.append(f"--- Failure #{i} ---")
+        report_lines.append(f"Type: {f.get('type', 'unknown')}")
+        report_lines.append(f"Error: {f.get('error', 'N/A')}")
+        if f.get('traceback'):
+            report_lines.append(f"Traceback:\n{f['traceback']}")
+        if f.get('details'):
+            for k, v in f['details'].items():
+                report_lines.append(f"{k}: {v}")
+        report_lines.append("")
+    report_lines.extend([
+        "--- DIAGNOSTIC INFO ---",
+        "User doc_id: synthetic_health_check",
+        "User email: ronen6213+synthetic@gmail.com",
+        "Script: sports_reminder.py",
+        f"Mode flag: {'--weekly' if mode == 'weekly' else '--player-stats' if mode == 'stats' else '--no-stats'}",
+        "",
+        "ACTION: Paste this entire email body to Claude to start debugging.",
+        "=" * 60,
+    ])
+    plain = "\n".join(report_lines)
+    html_esc = plain.replace("\n", "<br>\n")
+    html = f"""<html><body style="font-family:monospace;font-size:13px;background:#1a1a2e;color:#e0e0e0;padding:20px;">
+<div style="max-width:700px;margin:0 auto;">
+<div style="background:#d32f2f;color:white;padding:12px 20px;border-radius:8px 8px 0 0;">
+<h2 style="margin:0;">U0001f6a8 Synthetic Test FAILED — {mode}</h2>
+</div>
+<div style="background:#2d2d44;padding:20px;border-radius:0 0 8px 8px;">
+<pre style="white-space:pre-wrap;word-break:break-word;color:#e0e0e0;">{html_esc}</pre>
+</div></div></body></html>"""
+    subject = f"U0001f6a8 SportsReminder Synthetic FAILED — {mode} — {today}"
+    try:
+        send_raw_email(SYNTHETIC_ALERT_EMAIL, subject, html, plain, email_type="synthetic_alert")
+        print(f"   U0001f6a8 Synthetic alert sent to {SYNTHETIC_ALERT_EMAIL}")
+    except Exception as e:
+        print(f"   ❌ Failed to send synthetic alert: {e}")
+
+
 def main():
     args           = sys.argv[1:]
     send_mode      = "--send"        in args
@@ -2552,6 +2611,7 @@ def main():
     # ── Weekly digest mode (Saturday night, 20:00 IL) ─────────────────────
     if weekly_mode:
         print(f"\n📅 Weekly digest mode — {today}")
+        synthetic_failures = []
         for user in users:
             if user.get("emails_paused") and not test_mode:
                 print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
@@ -2569,16 +2629,24 @@ def main():
                 total = sum(len(v) for v in matches_by_day.values())
                 print(f"      🗓️  {total} match(es) across {len(matches_by_day)} day(s)")
                 if send_mode:
-                    send_weekly_email(user["email"], matches_by_day, today)
+                    ok = send_weekly_email(user["email"], matches_by_day, today)
+                    if user.get("synthetic") and not ok:
+                        synthetic_failures.append({"type": "send_failed", "error": "send_weekly_email returned False", "details": {"total_matches": total}})
                 else:
                     print(f"      ℹ️  Dry-run (add --send)")
             except Exception as e:
                 print(f"   ❌ {user['display_name']}: weekly email failed — {e}")
+                if user.get("synthetic"):
+                    import traceback as _tb
+                    synthetic_failures.append({"type": "exception", "error": str(e), "traceback": _tb.format_exc()})
+        if synthetic_failures:
+            _send_synthetic_alert("weekly", today, synthetic_failures)
         return
 
     # ── Multi-player stats mode (post-game email, 07:00 IL) ──────────────
     if player_stats_m:
         print(f"\n📊 Multi-player stats mode")
+        synthetic_failures = []
         for user in users:
             if user.get("emails_paused") and not test_mode:
                 print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
@@ -2594,6 +2662,11 @@ def main():
                 )
             except Exception as e:
                 print(f"   ❌ {user['display_name']}: stats email failed — {e}")
+                if user.get("synthetic"):
+                    import traceback as _tb
+                    synthetic_failures.append({"type": "exception", "error": str(e), "traceback": _tb.format_exc()})
+        if synthetic_failures:
+            _send_synthetic_alert("stats", today, synthetic_failures)
         return
 
     # ── Daily morning email (09:00 IL) ────────────────────────────────────
@@ -2619,6 +2692,7 @@ def main():
         print(f"   🏆 {len(wc_games)} WC game(s) today")
 
     # 3. Per-user: filter matches → send email
+    synthetic_failures = []
     for user in users:
         if user.get("emails_paused") and not test_mode:
             print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
@@ -2674,7 +2748,9 @@ def main():
             elif send_mode:
                 if matches:
                     print(f"      📧 Sending → {user['email']}")
-                    send_email(user["email"], matches, today)
+                    ok = send_email(user["email"], matches, today)
+                    if user.get("synthetic") and not ok:
+                        synthetic_failures.append({"type": "send_failed", "error": "send_email returned False", "details": {"matches": len(matches)}})
                 else:
                     print(f"      📭 No matches → no email")
 
@@ -2683,6 +2759,11 @@ def main():
 
         except Exception as e:
             print(f"   ❌ {user['display_name']}: daily email failed — {e}")
+            if user.get("synthetic"):
+                import traceback as _tb
+                synthetic_failures.append({"type": "exception", "error": str(e), "traceback": _tb.format_exc()})
+    if synthetic_failures:
+        _send_synthetic_alert("morning", today, synthetic_failures)
 
 if __name__ == "__main__":
     main()
