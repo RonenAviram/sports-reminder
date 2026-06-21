@@ -2066,7 +2066,12 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
         is_if_necessary = "if necessary" in p_note.lower()
         # Show Israel date next to time when game falls on a different display date
         game_display_date = m.get("display_date", m.get("il_date", today))
-        if game_display_date != today and m["time"] != "TBD":
+        game_il_date = m.get("il_date", today)
+        if m["time"] == "00:00" and game_display_date != game_il_date:
+            _dd_dt = datetime.datetime.strptime(game_display_date, "%Y-%m-%d")
+            _il_dt = datetime.datetime.strptime(game_il_date, "%Y-%m-%d")
+            date_prefix = f'<div style="font-size:11px; color:#6b7280; margin-bottom:1px;">{_dd_dt.strftime("%a")}-{_il_dt.strftime("%a")} night</div>'
+        elif game_display_date != today and m["time"] != "TBD":
             _g_dt = datetime.datetime.strptime(game_display_date, "%Y-%m-%d")
             _g_day_name = _g_dt.strftime("%a")  # e.g. "Tue"
             _g_date_str = f"{_g_day_name} {_g_dt.day}/{_g_dt.month}"
@@ -2240,7 +2245,10 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
     for m in matches:
         is_wc = m.get("is_world_cup") or m.get("league_id") == "fifa_world_cup"
         sep = " Vs " if is_wc else " @ "
-        plain += f"  {m['away']}{sep}{m['home']}  —  {m['league_name']}  —  {m['time']} (IL)\n"
+        _pt_mn = ""
+        if m["time"] == "00:00" and m.get("display_date") and m.get("il_date") and m["display_date"] != m["il_date"]:
+            _pt_mn = f" ({datetime.datetime.strptime(m['display_date'],'%Y-%m-%d').strftime('%a')}-{datetime.datetime.strptime(m['il_date'],'%Y-%m-%d').strftime('%a')} night)"
+        plain += f"  {m['away']}{sep}{m['home']}  —  {m['league_name']}  —  {m['time']}{_pt_mn} (IL)\n"
     if player_stats:
         plain += "\n---\n"
         for ps in player_stats:
@@ -2324,7 +2332,12 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
                                if is_if_necessary else "")
                     time_html = f'<span style="font-weight:600; color:#9ca3af;">TBD</span>{tbd_sub}'
                 else:
-                    time_html = f'<span style="font-weight:600; color:#1a56db;">{m["time"]}</span>'
+                    _w_midnight = ""
+                    if m["time"] == "00:00" and m.get("display_date") and m.get("il_date") and m["display_date"] != m["il_date"]:
+                        _w_dd_dt = datetime.datetime.strptime(m["display_date"], "%Y-%m-%d")
+                        _w_il_dt = datetime.datetime.strptime(m["il_date"], "%Y-%m-%d")
+                        _w_midnight = f'<div style="font-size:11px; color:#6b7280; margin-bottom:1px;">{_w_dd_dt.strftime("%a")}-{_w_il_dt.strftime("%a")} night</div>'
+                    time_html = f'{_w_midnight}<span style="font-weight:600; color:#1a56db;">{m["time"]}</span>'
                 # Build matchup text — World Cup uses "Vs" with flags
                 if is_wc:
                     home_flag = _country_flag_emoji(m.get("home_abbr", ""))
@@ -2407,7 +2420,10 @@ def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
             plain += f"{dt.strftime('%A, %b')} {dt.day}\n"
             for m in matches:
                 icon = "🏀" if m["sport"] == "basketball" else "⚽"
-                plain += f"  {icon}  {m['away']} @ {m['home']}  —  {m['league_name']}  —  {m['time']}\n"
+                _wpt_mn = ""
+                if m["time"] == "00:00" and m.get("display_date") and m.get("il_date") and m["display_date"] != m["il_date"]:
+                    _wpt_mn = f" ({datetime.datetime.strptime(m['display_date'],'%Y-%m-%d').strftime('%a')}-{datetime.datetime.strptime(m['il_date'],'%Y-%m-%d').strftime('%a')} night)"
+                plain += f"  {icon}  {m['away']} @ {m['home']}  —  {m['league_name']}  —  {m['time']}{_wpt_mn}\n"
                 p_note  = m.get("playoff_note", "")
                 p_series = _format_series_summary(m.get("series_summary", ""), m.get("il_date", ""))
                 if p_note or p_series:
