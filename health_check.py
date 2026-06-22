@@ -160,7 +160,10 @@ def check_espn(league_id: str, url: str) -> dict:
 
 
 def check_espn_player_stats() -> dict:
-    """Check ESPN player stats/gamelog endpoint."""
+    """Check ESPN player stats/gamelog endpoint.
+    NBA offseason: 404 is expected (no recent games) \u2192 marked as
+    'expected_failure' so it is logged but does NOT trigger an alert email.
+    """
     result = {
         "api": "espn_player_stats",
         "league": "nba",
@@ -410,8 +413,8 @@ def save_to_firestore(results: list[dict]):
     summary = {
         "timestamp": timestamp,
         "checks": {},
-        "all_ok": all(r["status"] == "ok" for r in results),
-        "failed_count": sum(1 for r in results if r["status"] != "ok"),
+        "all_ok": all(r["status"] in ("ok", "expected_failure") for r in results),
+        "failed_count": sum(1 for r in results if r["status"] not in ("ok", "expected_failure")),
     }
     for r in results:
         key = f"{r['api']}_{r['league']}"
@@ -428,8 +431,8 @@ def save_to_firestore(results: list[dict]):
 # ── Alert email ──────────────────────────────────────────────────────────────
 
 def send_alert_email(results: list[dict]):
-    """Send alert email if any API check failed."""
-    failed = [r for r in results if r["status"] != "ok"]
+    """Send alert email if any API check failed (excluding expected_failure)."""
+    failed = [r for r in results if r["status"] not in ("ok", "expected_failure")]
     if not failed:
         return
 
@@ -492,14 +495,17 @@ def main():
     results = run_all_checks()
 
     # Summary
-    ok = sum(1 for r in results if r["status"] == "ok")
+    ok = sum(1 for r in results if r["status"] in ("ok", "expected_failure"))
     fail = len(results) - ok
+    expected = sum(1 for r in results if r["status"] == "expected_failure")
     print()
     print(f"📊 Summary: {ok}/{len(results)} passed", end="")
+    if expected:
+        print(f" ({expected} expected failure)", end="")
     if fail:
         print(f", {fail} FAILED ❌")
     else:
-        print(" — all healthy ✅")
+        print(" \u2014 all healthy ✅")
 
     if dry_run:
         print("\n🏃 Dry run — skipping Firestore + email")
