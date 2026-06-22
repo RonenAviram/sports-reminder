@@ -19,6 +19,7 @@ import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
 import traceback
+import subprocess
 
 # ── Config ───────────────────────────────────────────────────────────────────
 
@@ -327,6 +328,47 @@ def run_check_with_retry(check_fn, *args, retries: int = 3, delay: float = 5.0) 
 
 # ── Main orchestrator ────────────────────────────────────────────────────────
 
+def run_synthetic_email_test() -> dict:
+    """Run sports_reminder.py with synthetic user to test end-to-end email flow."""
+    print("\n" + "=" * 60)
+    print("\xf0\x9f\xa7\xaa Synthetic Email Test")
+    print("=" * 60)
+    result = {
+        "api": "synthetic_email",
+        "endpoint": "sports_reminder.py --send --no-stats --test-user synthetic",
+        "status": "ok",
+        "error": None,
+        "response_time_ms": 0,
+    }
+    import time as _time
+    t0 = _time.time()
+    try:
+        proc = subprocess.run(
+            ["python3", "sports_reminder.py", "--send", "--no-stats",
+             "--test-user", "ronen6213+synthetic@gmail.com"],
+            capture_output=True, text=True, timeout=180
+        )
+        result["response_time_ms"] = int((_time.time() - t0) * 1000)
+        if proc.returncode != 0:
+            result["status"] = "subprocess_error"
+            # Get last 500 chars of stderr or stdout for diagnostics
+            err_output = (proc.stderr or proc.stdout or "no output")[-500:]
+            result["error"] = f"exit code {proc.returncode}: {err_output}"
+            print(f"  \xe2\x9d\x8c FAILED (exit {proc.returncode})")
+        else:
+            print(f"  \xe2\x9c\x85 OK ({result['response_time_ms']}ms)")
+    except subprocess.TimeoutExpired:
+        result["response_time_ms"] = int((_time.time() - t0) * 1000)
+        result["status"] = "timeout"
+        result["error"] = "Subprocess timed out after 180s"
+        print("  \xe2\x9d\x8c TIMEOUT (180s)")
+    except Exception as e:
+        result["response_time_ms"] = int((_time.time() - t0) * 1000)
+        result["status"] = "exception"
+        result["error"] = str(e)
+        print(f"  \xe2\x9d\x8c ERROR: {e}")
+    return result
+
 def run_all_checks() -> list[dict]:
     """Run all API health checks. Returns list of result dicts."""
     results = []
@@ -493,6 +535,10 @@ def main():
     print("=" * 60)
 
     results = run_all_checks()
+
+    # Run synthetic email test (end-to-end)
+    synthetic_result = run_synthetic_email_test()
+    results.append(synthetic_result)
 
     # Summary
     ok = sum(1 for r in results if r["status"] in ("ok", "expected_failure"))
