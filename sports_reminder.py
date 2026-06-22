@@ -1569,7 +1569,7 @@ def filter_matches_for_user(tracked: list[dict], games_by_league: dict, today: s
                 })
                 seen.add(game_key)
 
-    matches.sort(key=lambda m: (m.get("display_date", m.get("il_date", today)), m["time"]))
+    matches.sort(key=lambda m: (m.get("display_date", m.get("il_date", today)), m.get("il_date", today), m["time"]))
     return matches
 
 
@@ -1726,7 +1726,7 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
 
     # Sort matches within each day by time
     for day_matches in results.values():
-        day_matches.sort(key=lambda m: m["time"])
+        day_matches.sort(key=lambda m: (m.get("il_date", ""), m["time"]))
 
     return dict(sorted(results.items()))
 
@@ -1793,7 +1793,7 @@ def fetch_full_tournament_games(tracked_names: set) -> dict:
 
     # Sort matches within each day by time
     for day_matches in results.values():
-        day_matches.sort(key=lambda m: m["time"])
+        day_matches.sort(key=lambda m: (m.get("il_date", ""), m["time"]))
 
     print(f"  ✅ Total: {len(all_matches)} games across {len(results)} days")
     return dict(sorted(results.items()))
@@ -2731,7 +2731,7 @@ def main():
                                m["home"] == wc["home"] and m["away"] == wc["away"]:
                                 m["is_world_cup"] = True
                                 break
-                matches.sort(key=lambda m: (m.get("display_date", m.get("il_date", today)), m["time"]))
+                matches.sort(key=lambda m: (m.get("display_date", m.get("il_date", today)), m.get("il_date", today), m["time"]))
 
             wc_count = sum(1 for m in matches if m.get("is_world_cup") or m.get("league_id") == "fifa_world_cup")
             other_count = len(matches) - wc_count
