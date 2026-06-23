@@ -2073,8 +2073,9 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
             _il_dt = datetime.datetime.strptime(game_il_date, "%Y-%m-%d")
             date_prefix = f'<div style="font-size:11px; color:#6b7280; margin-bottom:1px;">{_dd_dt.strftime("%a")}-{_il_dt.strftime("%a")} night</div>'
         elif game_display_date != today and m["time"] != "TBD":
-            _g_dt = datetime.datetime.strptime(game_display_date, "%Y-%m-%d")
-            _g_day_name = _g_dt.strftime("%a")  # e.g. "Wed"
+            _label_date = game_il_date if game_il_date != game_display_date else game_display_date
+            _g_dt = datetime.datetime.strptime(_label_date, "%Y-%m-%d")
+            _g_day_name = _g_dt.strftime("%a")
             _g_date_str = f"{_g_day_name} {_g_dt.day}/{_g_dt.month}"
             date_prefix = f'<div style="font-size:11px; color:#6b7280; margin-bottom:1px;">{_g_date_str}</div>'
         elif game_il_date != game_display_date and m["time"] != "TBD":
