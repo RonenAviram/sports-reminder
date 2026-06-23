@@ -2065,16 +2065,22 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
             tournament_html = f'<div style="font-size:11px; color:#b45309; margin-top:2px; font-style:italic;">{t_note}</div>'
         # Time display — TBD gets a muted style; "If Necessary" gets extra note
         is_if_necessary = "if necessary" in p_note.lower()
-        # Show Israel date next to time when game falls on a different display date
-        game_display_date = m.get("display_date", m.get("il_date", today))
+        # Show date label next to time when game falls on a different day
         game_il_date = m.get("il_date", today)
+        game_display_date = m.get("display_date", game_il_date)
         if m["time"] == "00:00" and game_display_date != game_il_date:
             _dd_dt = datetime.datetime.strptime(game_display_date, "%Y-%m-%d")
             _il_dt = datetime.datetime.strptime(game_il_date, "%Y-%m-%d")
             date_prefix = f'<div style="font-size:11px; color:#6b7280; margin-bottom:1px;">{_dd_dt.strftime("%a")}-{_il_dt.strftime("%a")} night</div>'
         elif game_display_date != today and m["time"] != "TBD":
             _g_dt = datetime.datetime.strptime(game_display_date, "%Y-%m-%d")
-            _g_day_name = _g_dt.strftime("%a")  # e.g. "Tue"
+            _g_day_name = _g_dt.strftime("%a")  # e.g. "Wed"
+            _g_date_str = f"{_g_day_name} {_g_dt.day}/{_g_dt.month}"
+            date_prefix = f'<div style="font-size:11px; color:#6b7280; margin-bottom:1px;">{_g_date_str}</div>'
+        elif game_il_date != game_display_date and m["time"] != "TBD":
+            # Game is tonight but crosses midnight (e.g. Panama 02:00 = early morning of il_date)
+            _g_dt = datetime.datetime.strptime(game_il_date, "%Y-%m-%d")
+            _g_day_name = _g_dt.strftime("%a")
             _g_date_str = f"{_g_day_name} {_g_dt.day}/{_g_dt.month}"
             date_prefix = f'<div style="font-size:11px; color:#6b7280; margin-bottom:1px;">{_g_date_str}</div>'
         else:
