@@ -442,7 +442,7 @@ def save_to_firestore(results: list[dict]):
         doc_ref = db.collection("api_health_checks").document()
         doc = {
             "api": r["api"],
-            "league": r["league"],
+            "league": r.get("league", ""),
             "status": r["status"],
             "error": r["error"],
             "details": r.get("details", {}),
@@ -459,7 +459,7 @@ def save_to_firestore(results: list[dict]):
         "failed_count": sum(1 for r in results if r["status"] not in ("ok", "expected_failure")),
     }
     for r in results:
-        key = f"{r['api']}_{r['league']}"
+        key = f"{r['api']}_{r.get('league', '')}"
         summary["checks"][key] = {
             "status": r["status"],
             "error": r["error"],
@@ -488,7 +488,7 @@ def send_alert_email(results: list[dict]):
         rows += f"""
         <tr>
             <td style="padding:8px;border:1px solid #ddd;font-weight:bold">{r['api']}</td>
-            <td style="padding:8px;border:1px solid #ddd">{r['league']}</td>
+            <td style="padding:8px;border:1px solid #ddd">{r.get('league', '')}</td>
             <td style="padding:8px;border:1px solid #ddd;color:#dc2626">{r['status']}</td>
             <td style="padding:8px;border:1px solid #ddd;font-size:13px">{r['error']}</td>
         </tr>"""
@@ -514,7 +514,7 @@ def send_alert_email(results: list[dict]):
 
     plain_lines = [f"⚠️ API Health Check Failed — {len(failed)} check(s) failed", ""]
     for r in failed:
-        plain_lines.append(f"❌ {r['api']} / {r['league']}: {r['status']} — {r['error']}")
+        plain_lines.append(f"❌ {r['api']} / {r.get('league', '')}: {r['status']} — {r['error']}")
     plain = "\n".join(plain_lines)
 
     ok = send_raw_email(ADMIN_EMAIL, subject, html, plain, email_type="health_alert")
