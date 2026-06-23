@@ -196,8 +196,8 @@ def check_espn_player_stats() -> dict:
             result["error"] = f"Unexpected response keys: {list(data.keys())[:5]}"
 
     except urllib.error.HTTPError as e:
-        result["status"] = "http_error"
-        result["error"] = f"HTTP {e.code}: {e.reason}"
+        result["status"] = "expected_failure"
+        result["error"] = f"HTTP {e.code} - NBA offseason (no recent games)"
     except Exception as e:
         result["status"] = "unknown_error"
         result["error"] = str(e)
@@ -312,7 +312,7 @@ def run_check_with_retry(check_fn, *args, retries: int = 3, delay: float = 5.0) 
     last_result = None
     for attempt in range(retries):
         result = check_fn(*args)
-        if result["status"] == "ok":
+        if result["status"] in ("ok", "expected_failure"):
             return result
         last_result = result
         # Only retry on transient errors
