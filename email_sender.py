@@ -126,6 +126,8 @@ def send_raw_email(to: str, subject: str, html: str, plain: str,
     # Auto-detect synthetic from email address
     if "+synthetic" in to:
         synthetic = True
+    if synthetic:
+        subject = "[Health Check] " + subject
     """
     Send a single email.
 
