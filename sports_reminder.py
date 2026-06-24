@@ -2567,7 +2567,7 @@ def main():
             if user.get("emails_paused") and not test_mode:
                 print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
                 continue
-            if user.get("synthetic"):
+            if user.get("synthetic") and not test_user_email:
                 continue
             if not user.get("weekly_digest") and not test_mode:
                 print(f"\n   ⏭️  {user['display_name']}: weekly digest disabled → skipping")
@@ -2596,7 +2596,7 @@ def main():
             if user.get("emails_paused") and not test_mode:
                 print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
                 continue
-            if user.get("synthetic"):
+            if user.get("synthetic") and not test_user_email:
                 continue
             try:
                 print(f"\n   👤 {user['display_name']}...")
@@ -2638,7 +2638,7 @@ def main():
         if user.get("emails_paused") and not test_mode:
             print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
             continue
-        if user.get("synthetic"):
+        if user.get("synthetic") and not test_user_email:
             continue
         try:
             tracked = user["teams"]
