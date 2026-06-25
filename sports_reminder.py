@@ -1869,15 +1869,17 @@ def build_tournament_email_html(matches_by_day: dict) -> str:
           <h1 style="color:white; margin:0; font-size:18px; font-weight:700;">FIFA World Cup 2026</h1>
           <p style="color:#94a3b8; margin:4px 0 0; font-size:13px;">Full Schedule — {total} matches · Israel time</p>
         </div>
+        <div style="margin:12px 16px 0;background:#25D366;border-radius:8px;padding:10px 16px;text-align:center;">
+          <a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:white;text-decoration:none;font-size:13px;font-weight:600;">📱 Get updates on WhatsApp</a>
+        </div>
         <div>{days_html}</div>
-        <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
+        <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb; text-align:center;">
           <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=tournament"
-             style="font-size:12px; color:#6b7280; text-decoration:none;">
-            ✏️ Edit your teams at sports-reminder-ui.vercel.app
+             style="font-size:12px; color:#3b82f6; text-decoration:underline;">
+            ✏️ Edit your teams here
           </a>
-          <div style="margin-top:12px;font-size:12px;color:#999;">
+          <div style="margin-top:8px;font-size:12px;color:#999;">
             <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
-          <div style="margin-top:8px;text-align:center;"><a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:#25D366;text-decoration:none;font-size:12px;">📱 Get updates on WhatsApp</a></div>
           </div>
         </div>
       </div>
@@ -2206,6 +2208,9 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
           </h1>
           <p style="color:#94a3b8; margin:4px 0 0; font-size:13px;">{date_formatted}</p>
         </div>
+        <div style="margin:12px 16px 0;background:#25D366;border-radius:8px;padding:10px 16px;text-align:center;">
+          <a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:white;text-decoration:none;font-size:13px;font-weight:600;">📱 Get updates on WhatsApp</a>
+        </div>
         <div style="padding:16px 24px 8px;">
           {''.join([
             f'<p style="color:#374151; margin:0 0 16px; font-size:14px;">You have <strong>{len(matches)} {"match" if len(matches)==1 else "matches"}</strong> ahead:</p>',
@@ -2213,14 +2218,13 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
           ]) if matches else ''}
           {player_stats_html}
         </div>
-        <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
+        <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb; text-align:center;">
           <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=daily"
-             style="font-size:12px; color:#6b7280; text-decoration:none;">
-            ✏️ Edit your teams at sports-reminder-ui.vercel.app
+             style="font-size:12px; color:#3b82f6; text-decoration:underline;">
+            ✏️ Edit your teams here
           </a>
-          <div style="margin-top:12px;font-size:12px;color:#999;">
+          <div style="margin-top:8px;font-size:12px;color:#999;">
             <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
-          <div style="margin-top:8px;text-align:center;"><a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:#25D366;text-decoration:none;font-size:12px;">📱 Get updates on WhatsApp</a></div>
           </div>
         </div>
       </div>
@@ -2396,15 +2400,17 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
           <h1 style="color:white; margin:0; font-size:18px; font-weight:700;">Upcoming Matches</h1>
           <p style="color:#94a3b8; margin:4px 0 0; font-size:13px;">{week_lbl} · Israel time</p>
         </div>
+        <div style="margin:12px 16px 0;background:#25D366;border-radius:8px;padding:10px 16px;text-align:center;">
+          <a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:white;text-decoration:none;font-size:13px;font-weight:600;">📱 Get updates on WhatsApp</a>
+        </div>
         {body_html}
-        <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
+        <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb; text-align:center;">
           <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=weekly"
-             style="font-size:12px; color:#6b7280; text-decoration:none;">
-            ✏️ Edit your teams at sports-reminder-ui.vercel.app
+             style="font-size:12px; color:#3b82f6; text-decoration:underline;">
+            ✏️ Edit your teams here
           </a>
-          <div style="margin-top:12px;font-size:12px;color:#999;">
+          <div style="margin-top:8px;font-size:12px;color:#999;">
             <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
-          <div style="margin-top:8px;text-align:center;"><a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:#25D366;text-decoration:none;font-size:12px;">📱 Get updates on WhatsApp</a></div>
           </div>
         </div>
       </div>
