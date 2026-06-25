@@ -671,17 +671,19 @@ def build_player_stats_email_html(players: list[dict], email_type: str) -> str:
           <div style="font-size:40px; margin-bottom:4px; line-height:1;">{header_emoji}</div>
           <h1 style="color:white; margin:0; font-size:18px; font-weight:700;">{header_title}</h1>
         </div>
+        <div style="margin:12px 16px 0;background:#25D366;border-radius:8px;padding:10px 16px;text-align:center;">
+          <a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:white;text-decoration:none;font-size:13px;font-weight:600;">📱 Get updates on WhatsApp</a>
+        </div>
         <div style="padding:8px 24px 16px;">
           {cards_html}
         </div>
-        <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
+        <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb; text-align:center;">
           <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=stats"
-             style="font-size:12px; color:#6b7280; text-decoration:none;">
-            ✏️ Manage players at sports-reminder-ui.vercel.app
+             style="font-size:12px; color:#3b82f6; text-decoration:underline;">
+            ✏️ Manage your players here
           </a>
-          <div style="margin-top:12px;font-size:12px;color:#999;">
+          <div style="margin-top:8px;font-size:12px;color:#999;">
             <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
-          <div style="margin-top:8px;text-align:center;"><a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:#25D366;text-decoration:none;font-size:12px;">📱 Get updates on WhatsApp</a></div>
           </div>
         </div>
       </div>
