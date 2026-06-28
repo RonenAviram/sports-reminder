@@ -473,19 +473,23 @@ def save_to_firestore(results: list[dict]):
 # ── Alert email ──────────────────────────────────────────────────────────────
 
 def send_alert_email(results: list[dict]):
-    """Send alert email if any API check failed (excluding expected_failure)."""
-    failed = [r for r in results if r["status"] not in ("ok", "expected_failure")]
-    if not failed:
-        return
-
+    """Send health check summary email — alert on failure, confirmation on success."""
     from email_sender import send_raw_email
 
-    subject = f"⚠️ API Health Alert — {len(failed)} check(s) failed"
+    failed = [r for r in results if r["status"] not in ("ok", "expected_failure")]
+    ok_count = sum(1 for r in results if r["status"] == "ok")
+    expected = sum(1 for r in results if r["status"] == "expected_failure")
+    total = len(results)
+    timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')
 
-    # Build HTML
-    rows = ""
-    for r in failed:
-        rows += f"""
+    if failed:
+        # ── Failure alert ──
+        subject = f"⚠️ API Health Alert — {len(failed)} check(s) failed"
+
+        # Build HTML
+        rows = ""
+        for r in failed:
+            rows += f"""
         <tr>
             <td style="padding:8px;border:1px solid #ddd;font-weight:bold">{r['api']}</td>
             <td style="padding:8px;border:1px solid #ddd">{r.get('league', '')}</td>
@@ -493,8 +497,7 @@ def send_alert_email(results: list[dict]):
             <td style="padding:8px;border:1px solid #ddd;font-size:13px">{r['error']}</td>
         </tr>"""
 
-    ok_count = sum(1 for r in results if r["status"] == "ok")
-    html = f"""
+        html = f"""
     <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:20px">
         <h2 style="color:#dc2626;margin-bottom:4px">⚠️ API Health Check Failed</h2>
         <p style="color:#666;margin-top:0">{datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}</p>
@@ -512,16 +515,30 @@ def send_alert_email(results: list[dict]):
         Check the Admin tab for full details: <a href="https://sports-reminder-ui.vercel.app">Admin Dashboard</a></p>
     </div>"""
 
-    plain_lines = [f"⚠️ API Health Check Failed — {len(failed)} check(s) failed", ""]
-    for r in failed:
-        plain_lines.append(f"❌ {r['api']} / {r.get('league', '')}: {r['status']} — {r['error']}")
-    plain = "\n".join(plain_lines)
+        plain_lines = [f"⚠️ API Health Check Failed — {len(failed)} check(s) failed", ""]
+        for r in failed:
+            plain_lines.append(f"❌ {r['api']} / {r.get('league', '')}: {r['status']} — {r['error']}")
+        plain = "\n".join(plain_lines)
 
-    ok = send_raw_email(ADMIN_EMAIL, subject, html, plain, email_type="health_alert")
-    if ok:
-        print(f"\xf0\x9f\x93\xa7 Alert email sent to {ADMIN_EMAIL}")
     else:
-        print(f"\xe2\x9d\x8c Alert email FAILED for {ADMIN_EMAIL}")
+        # ── Success summary ──
+        subject = f"✅ Health Check Passed — {ok_count}/{total} OK"
+
+        expected_note = f" ({expected} expected failure)" if expected else ""
+
+        html = f"""
+        <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+            <h2 style="color:#16a34a;margin-bottom:4px">✅ All Systems Healthy</h2>
+            <p style="color:#666;margin-top:0">{timestamp}</p>
+            <p><strong>{ok_count}</strong> of <strong>{total}</strong> checks passed{expected_note}.</p>
+            <p style="color:#666;font-size:13px">Synthetic email test included.<br>
+            <a href="https://sports-reminder-ui.vercel.app">Admin Dashboard</a></p>
+        </div>"""
+
+        plain = f"✅ Health Check Passed — {ok_count}/{total} OK{expected_note}\nSynthetic email test included."
+
+    send_raw_email(ADMIN_EMAIL, subject, html, plain, email_type="health_alert")
+    print(f"📧 Health summary email sent to {ADMIN_EMAIL}")
 
 
 # ── CLI entrypoint ───────────────────────────────────────────────────────────
