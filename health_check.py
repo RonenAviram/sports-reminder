@@ -477,7 +477,7 @@ def send_alert_email(results: list[dict]):
     from email_sender import send_raw_email
 
     failed = [r for r in results if r["status"] not in ("ok", "expected_failure")]
-    ok_count = sum(1 for r in results if r["status"] == "ok")
+    ok_count = sum(1 for r in results if r["status"] in ("ok", "expected_failure"))
     expected = sum(1 for r in results if r["status"] == "expected_failure")
     total = len(results)
     timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')
@@ -524,7 +524,7 @@ def send_alert_email(results: list[dict]):
         # ── Success summary ──
         subject = f"✅ Health Check Passed — {ok_count}/{total} OK"
 
-        expected_note = f" ({expected} expected failure)" if expected else ""
+        expected_note = f" ({expected} expected warning)" if expected else ""
 
         html = f"""
         <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:20px">
@@ -537,7 +537,8 @@ def send_alert_email(results: list[dict]):
 
         plain = f"✅ Health Check Passed — {ok_count}/{total} OK{expected_note}\nSynthetic email test included."
 
-    send_raw_email(ADMIN_EMAIL, subject, html, plain, email_type="health_alert")
+    to_addr = ADMIN_EMAIL if failed else ADMIN_EMAIL.replace("@", "+healthcheck@")
+    send_raw_email(to_addr, subject, html, plain, email_type="health_alert")
     print(f"📧 Health summary email sent to {ADMIN_EMAIL}")
 
 
@@ -564,7 +565,7 @@ def main():
     print()
     print(f"📊 Summary: {ok}/{len(results)} passed", end="")
     if expected:
-        print(f" ({expected} expected failure)", end="")
+        print(f" ({expected} expected warning)", end="")
     if fail:
         print(f", {fail} FAILED ❌")
     else:
