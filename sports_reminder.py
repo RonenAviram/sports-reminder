@@ -1145,7 +1145,7 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
             time_str = "TBD"
 
         # NBA/MLS: only show games within the next 24 hours (skip this filter in weekly_mode)
-        if league_id in ("nba", "mls") and game_utc_dt is not None and not weekly_mode:
+        if league_id in ("nba", "mls", "fifa_world_cup") and game_utc_dt is not None and not weekly_mode:
             now_utc = datetime.datetime.utcnow()
             if game_utc_dt < now_utc or game_utc_dt > now_utc + datetime.timedelta(hours=24):
                 continue
