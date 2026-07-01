@@ -127,7 +127,7 @@ def send_raw_email(to: str, subject: str, html: str, plain: str,
     if "+synthetic" in to:
         synthetic = True
     if synthetic:
-        subject = "[Health Check] " + subject
+        subject = "SportsReminder Synthetic Test"
     """
     Send a single email.
 
