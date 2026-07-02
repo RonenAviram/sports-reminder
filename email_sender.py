@@ -14,6 +14,9 @@ Email logging:
 
 import os
 import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 # ── Config ───────────────────────────────────────────────────────────────────────────────
 
@@ -28,7 +31,7 @@ def _send_via_resend(to: str, subject: str, html: str, plain: str) -> tuple:
     try:
         import resend
     except ImportError:
-        print("❌  resend package not installed. Run: pip install resend")
+        logger.error("resend package not installed. Run: pip install resend")
         return False, ""
 
     resend.api_key = RESEND_API_KEY
@@ -42,10 +45,10 @@ def _send_via_resend(to: str, subject: str, html: str, plain: str) -> tuple:
     try:
         resp = resend.Emails.send(params)
         email_id = getattr(resp, "id", "") or (resp.get("id", "") if isinstance(resp, dict) else "")
-        print(f"✅  Email sent to {to} (Resend, id={email_id})")
+        logger.info("Email sent to %s (Resend, id=%s)", to, email_id)
         return True, email_id
-    except Exception as e:
-        print(f"❌  Email failed ({to}, Resend): {e}")
+    except Exception:
+        logger.exception("Email failed (%s, Resend)", to)
         return False, ""
 
 
@@ -63,8 +66,8 @@ def _get_firestore_db():
         from google.cloud import firestore as _fs
         _firestore_db = _fs.Client()
         return _firestore_db
-    except Exception as e:
-        print(f"⚠️  Firestore not available for email logging: {e}")
+    except Exception:
+        logger.warning("Firestore not available for email logging", exc_info=True)
         return None
 
 def _log_email(to: str, subject: str, email_type: str, status: str,
@@ -88,8 +91,8 @@ def _log_email(to: str, subject: str, email_type: str, status: str,
         if resend_email_id:
             doc["resend_email_id"] = resend_email_id
         db.collection("email_logs").add(doc)
-    except Exception as e:
-        print(f"⚠️  Email log write failed: {e}")
+    except Exception:
+        logger.warning("Email log write failed", exc_info=True)
 
 
 def send_raw_email(to: str, subject: str, html: str, plain: str,
@@ -121,7 +124,6 @@ def send_raw_email(to: str, subject: str, html: str, plain: str,
         return ok
 
 
-    print("❌  No email provider configured.")
-    print("    Set RESEND_API_KEY environment variable.")
+    logger.error("No email provider configured. Set RESEND_API_KEY environment variable.")
     _log_email(to, subject, email_type, "failed", "none", "no provider configured", synthetic=synthetic)
     return False
