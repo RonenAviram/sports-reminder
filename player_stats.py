@@ -26,6 +26,16 @@ from email.header import Header
 FIREBASE_PROJECT = "sports-reminder-55578"
 FIREBASE_API_KEY = "AIzaSyCd3C1_XN69r8lWUBYPndoGFxmDjnsjX1E"
 
+_firestore_db_ps = None
+def _get_db_ps():
+    global _firestore_db_ps
+    if _firestore_db_ps is not None:
+        return _firestore_db_ps
+    from google.cloud import firestore
+    _firestore_db_ps = firestore.Client()
+    return _firestore_db_ps
+
+
 # ESPN Player IDs for all tracked players
 # Keys = ESPN ID (string), values used only for initial Firestore population
 DEFAULT_PLAYERS = {
@@ -131,82 +141,66 @@ def _israel_utc_offset_h(at_utc: datetime.datetime) -> int:
 
 def load_tracked_players(doc_id: str) -> dict:
     """
-    Read tracked_players map from Firestore users/{doc_id}.
+    Read tracked_players map from Firestore users/{doc_id} via Admin SDK.
     Returns {espn_id_str: {name, enabled, tags, team}} for ENABLED players only.
     """
-    url = (
-        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/users/{doc_id}"
-        f"?key={FIREBASE_API_KEY}"
-    )
     try:
-        data = _fetch_json(url)
+        doc = _get_db_ps().collection("users").document(doc_id).get()
+        if not doc.exists:
+            return {}
+        fields = doc.to_dict()
     except Exception as e:
         print(f"⚠️  Could not read Firestore: {e}")
         return {}
 
-    fields = data.get("fields", {})
-    tp_field = fields.get("tracked_players", {}).get("mapValue", {}).get("fields", {})
+    tp_field = fields.get("tracked_players", {})
+    if not isinstance(tp_field, dict):
+        return {}
 
     players = {}
     for espn_id, val in tp_field.items():
-        m = val.get("mapValue", {}).get("fields", {})
-        # Check enabled flag
-        enabled_field = m.get("enabled", {})
-        if "booleanValue" in enabled_field:
-            enabled = bool(enabled_field["booleanValue"])
-        else:
-            enabled = True
-        if not enabled:
+        if not isinstance(val, dict):
+            # Simple boolean format: {espn_id: true}
+            if val is True:
+                players[espn_id] = {"name": f"Player {espn_id}", "enabled": True, "tags": [], "team": ""}
             continue
-
-        # Read tags array
-        tags_raw = m.get("tags", {}).get("arrayValue", {}).get("values", [])
-        tags = [t.get("stringValue", "") for t in tags_raw]
-
+        enabled = val.get("enabled", True)
+        if isinstance(enabled, bool) and not enabled:
+            continue
+        tags = val.get("tags", [])
+        if not isinstance(tags, list):
+            tags = []
         players[espn_id] = {
-            "name":  m.get("name", {}).get("stringValue", f"Player {espn_id}"),
+            "name":    val.get("name", f"Player {espn_id}"),
             "enabled": True,
-            "tags":  tags,
-            "team":  m.get("team", {}).get("stringValue", ""),
+            "tags":    tags,
+            "team":    val.get("team", ""),
         }
     return players
 
-
 def load_player_email_toggles(doc_id: str) -> dict:
     """
-    Read the 3 email toggle booleans from Firestore.
+    Read the 3 email toggle booleans from Firestore via Admin SDK.
     Returns {avdija_dedicated: bool, israeli: bool, general: bool}.
     """
-    url = (
-        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/users/{doc_id}"
-        f"?key={FIREBASE_API_KEY}"
-    )
     try:
-        data = _fetch_json(url)
+        doc = _get_db_ps().collection("users").document(doc_id).get()
+        if not doc.exists:
+            return {"avdija_dedicated": False, "israeli": False, "general": False}
+        fields = doc.to_dict()
     except Exception as e:
         print(f"⚠️  Could not read Firestore toggles: {e}")
         return {"avdija_dedicated": False, "israeli": False, "general": False}
 
-    fields = data.get("fields", {})
-
     def _bool_field(name, default=False):
-        f = fields.get(name, {})
-        if "booleanValue" in f:
-            return bool(f["booleanValue"])
-        return default
+        val = fields.get(name, default)
+        return val if isinstance(val, bool) else default
 
     return {
         "avdija_dedicated": _bool_field("avdija_dedicated_email", False),
         "israeli":          _bool_field("israeli_players_email", False),
         "general":          _bool_field("player_stats_email", False),
     }
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# ESPN FETCHING
-# ─────────────────────────────────────────────────────────────────────────────
 
 def check_nba_games_yesterday(yesterday_il: str) -> bool:
     """
@@ -394,7 +388,7 @@ def fetch_all_player_stats(players: dict, yesterday_il: str,
 def update_player_teams(doc_id: str, results: list[dict], players: dict) -> None:
     """
     For each player in results, if ESPN returned a different team name
-    than Firestore, update the team field. Batched into a single PATCH.
+    than Firestore, update the team field via Admin SDK.
     """
     updates = {}
     for stat in results:
@@ -407,46 +401,33 @@ def update_player_teams(doc_id: str, results: list[dict], players: dict) -> None
         return
 
     # Read full tracked_players, apply changes, write back
-    url = (
-        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/users/{doc_id}"
-        f"?key={FIREBASE_API_KEY}"
-    )
     try:
-        data = _fetch_json(url)
-    except Exception:
-        return
-
-    tp_field = data.get("fields", {}).get("tracked_players", {}).get("mapValue", {}).get("fields", {})
-    changed = False
-    for espn_id, new_team in updates.items():
-        if espn_id in tp_field:
-            tp_field[espn_id]["mapValue"]["fields"]["team"] = {"stringValue": new_team}
-            changed = True
-            print(f"   🔄 {players[espn_id]['name']}: team updated → {new_team}")
-
-    if not changed:
-        return
-
-    # PATCH only tracked_players field
-    patch_url = url + "&updateMask.fieldPaths=tracked_players"
-    body = json.dumps({
-        "fields": {
-            "tracked_players": {"mapValue": {"fields": tp_field}}
-        }
-    }).encode()
-    req = urllib.request.Request(patch_url, data=body, method="PATCH",
-                                 headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=15) as r:
-            r.read()
+        doc_ref = _get_db_ps().collection("users").document(doc_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            print(f"⚠️  update_player_teams: doc {doc_id} not found")
+            return
+        fields = doc.to_dict()
     except Exception as e:
-        print(f"   ⚠️  Firestore team sync failed: {e}")
+        print(f"⚠️  update_player_teams read failed: {e}")
+        return
 
+    tp = fields.get("tracked_players", {})
+    if not isinstance(tp, dict):
+        return
 
-# ─────────────────────────────────────────────────────────────────────────────
-# EMAIL PARTITIONING — priority cascade
-# ─────────────────────────────────────────────────────────────────────────────
+    changed = 0
+    for espn_id, new_team in updates.items():
+        if espn_id in tp and isinstance(tp[espn_id], dict):
+            tp[espn_id]["team"] = new_team
+            changed += 1
+
+    if changed:
+        try:
+            doc_ref.set({"tracked_players": tp}, merge=True)
+            print(f"   Updated {changed} player team(s) in Firestore")
+        except Exception as e:
+            print(f"⚠️  update_player_teams write failed: {e}")
 
 def partition_players_to_emails(stats: list[dict], toggles: dict,
                                  players: dict) -> dict:
