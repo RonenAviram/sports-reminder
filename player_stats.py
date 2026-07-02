@@ -676,9 +676,8 @@ def build_player_stats_email_html(players: list[dict], email_type: str) -> str:
 # EMAIL SENDING
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _send_one_email(gmail_user: str, gmail_pass: str, to: str,
-                    subject: str, html: str, plain: str) -> bool:
-    """Send a single email. gmail_user/gmail_pass kept for backward compat but ignored."""
+def _send_one_email(to: str, subject: str, html: str, plain: str) -> bool:
+    """Send a single email via send_raw_email()."""
     return send_raw_email(to, subject, html, plain, email_type="stats")
 
 
@@ -708,7 +707,7 @@ def _build_plain_text(players: list[dict]) -> str:
 # ORCHESTRATION — main entry point
 # ─────────────────────────────────────────────────────────────────────────────
 
-def send_player_stats_emails(doc_id: str, gmail_user: str, gmail_pass: str,
+def send_player_stats_emails(doc_id: str, to_email: str,
                               target_date: str, send: bool = True) -> None:
     """
     Main entry point for multi-player stats emails.
@@ -788,8 +787,7 @@ def send_player_stats_emails(doc_id: str, gmail_user: str, gmail_pass: str,
                 print(f"      ⏳ Waiting 5s before next email...")
                 time.sleep(5)
 
-            ok = _send_one_email(gmail_user, gmail_pass, gmail_user,
-                                 subject, html, plain)
+            ok = _send_one_email(to_email, subject, html, plain)
             if ok:
                 print(f"      ✅ Sent!")
                 emails_sent += 1
