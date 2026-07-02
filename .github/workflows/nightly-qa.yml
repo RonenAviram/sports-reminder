@@ -1,0 +1,119 @@
+name: Nightly QA
+
+on:
+  schedule:
+    # 00:00 UTC = ~03:00 Israel time (before the 08:30 health check and 09:00 morning email)
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+    inputs:
+      simulate_date:
+        description: "Simulate date (YYYY-MM-DD) for E2E dry-run"
+        required: false
+        default: ""
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────
+  # Layer 1: Pure unit tests (zero side-effects, zero network)
+  # ─────────────────────────────────────────────────────────────────────
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pytest
+        run: pip install pytest
+      - name: Run unit tests
+        run: pytest tests/test_core.py -v --tb=short
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Layer 2: E2E dry-run (no --send, no emails, no Firestore writes)
+  # Tests all 3 modes with a fixed simulate-date.
+  # ─────────────────────────────────────────────────────────────────────
+  e2e-dry-run:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Determine simulate date
+        id: simdate
+        run: |
+          if [ -n "${{ github.event.inputs.simulate_date }}" ]; then
+            echo "date=${{ github.event.inputs.simulate_date }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "date=2026-06-23" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: "Dry-run: morning (--no-stats)"
+        run: |
+          python3 sports_reminder.py --no-stats \
+            --simulate-date ${{ steps.simdate.outputs.date }} \
+            --test-user ronen6213+synthetic@gmail.com \
+            || true
+        env:
+          RESEND_API_KEY: "dry-run-no-key"
+
+      - name: "Dry-run: weekly"
+        run: |
+          python3 sports_reminder.py --weekly \
+            --simulate-date ${{ steps.simdate.outputs.date }} \
+            --test-user ronen6213+synthetic@gmail.com \
+            || true
+        env:
+          RESEND_API_KEY: "dry-run-no-key"
+
+      - name: "Dry-run: player stats"
+        run: |
+          python3 sports_reminder.py --player-stats \
+            --simulate-date ${{ steps.simdate.outputs.date }} \
+            --test-user ronen6213+synthetic@gmail.com \
+            || true
+        env:
+          RESEND_API_KEY: "dry-run-no-key"
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Layer 3: Synthetic send — one real email to the test address
+  # ─────────────────────────────────────────────────────────────────────
+  synthetic-send:
+    runs-on: ubuntu-latest
+    needs: e2e-dry-run
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: "Send synthetic email"
+        run: |
+          python3 sports_reminder.py --send --no-stats \
+            --test-user ronen6213+synthetic@gmail.com
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Alert on failure — send email via Resend + native GitHub notification
+  # ─────────────────────────────────────────────────────────────────────
+  alert-on-failure:
+    runs-on: ubuntu-latest
+    needs: [unit-tests, e2e-dry-run, synthetic-send]
+    if: failure()
+    steps:
+      - name: Send failure alert via Resend
+        run: |
+          curl -s -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer ${{ secrets.RESEND_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "from": "Sports Reminder <noreply@sportsreminder.pro>",
+              "to": ["ronen6213@gmail.com"],
+              "subject": "⚠️ Nightly QA Failed — SportsReminder",
+              "html": "<h2 style=\"color:#dc2626\">Nightly QA Failed</h2><p>One or more QA steps failed in the <a href=\"https://github.com/RonenAviram/sports-reminder/actions\">nightly-qa workflow</a>.</p><p>Check the Actions tab for details.</p>"
+            }'
