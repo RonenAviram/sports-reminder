@@ -46,7 +46,7 @@ class TestIsraelUTCOffset:
 
     def test_autumn_transition_before(self):
         """2026: last Sunday of October = October 25.
-        One second before 01:00 UTC → still summer (+3)."""
+        Midday Oct 24 UTC → clearly still summer (+3)."""
         dt = datetime.datetime(2026, 10, 24, 12, 0, 0)
         assert sr._israel_utc_offset_h(dt) == 3
 
@@ -179,7 +179,7 @@ class TestLabelDecision:
         """02:00 game: il_date=Wed 24/6, display_date=Tue 24/6→wait,
         display_date=Tue 24/6 (future), il_date=Thu 25/6 → show 'Thu 25/6'?
         Actually let's use the real case: Scotland 01:00, il=25/6 (Wed), disp=24/6 (Tue), today=23/6.
-        Branch 2 + cross-midnight → label = il_date = 'Wed 25/6'"""
+        Branch 2 + cross-midnight → label = il_date = 'Thu 25/6'"""
         label, is_mid = _label_decision("01:00", "2026-06-25", "2026-06-24", "2026-06-23")
         assert is_mid is False
         assert label == "Thu 25/6"
