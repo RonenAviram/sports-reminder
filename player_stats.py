@@ -15,6 +15,9 @@ import time
 import datetime
 import urllib.request
 import urllib.parse
+import logging
+
+logger = logging.getLogger(__name__)
 
 from email_sender import send_raw_email
 from email.header import Header
@@ -150,7 +153,7 @@ def load_tracked_players(doc_id: str) -> dict:
             return {}
         fields = doc.to_dict()
     except Exception as e:
-        print(f"⚠️  Could not read Firestore: {e}")
+        logger.warning("Could not read Firestore: %s", e)
         return {}
 
     tp_field = fields.get("tracked_players", {})
@@ -189,7 +192,7 @@ def load_player_email_toggles(doc_id: str) -> dict:
             return {"avdija_dedicated": False, "israeli": False, "general": False}
         fields = doc.to_dict()
     except Exception as e:
-        print(f"⚠️  Could not read Firestore toggles: {e}")
+        logger.warning("Could not read Firestore toggles: %s", e)
         return {"avdija_dedicated": False, "israeli": False, "general": False}
 
     def _bool_field(name, default=False):
@@ -215,7 +218,7 @@ def check_nba_games_yesterday(yesterday_il: str) -> bool:
         events = data.get("events", [])
         return len(events) > 0
     except Exception as e:
-        print(f"⚠️  Could not check NBA scoreboard: {e}")
+        logger.warning("Could not check NBA scoreboard: %s", e)
         return True  # assume games exist on error, to avoid skipping
 
 
@@ -376,7 +379,7 @@ def fetch_all_player_stats(players: dict, yesterday_il: str,
                     stats["player_name"] = info["name"]
                 results.append(stats)
         except Exception as e:
-            print(f"   ⚠️  Error fetching {info['name']} ({espn_id}): {e}")
+            logger.warning("Error fetching %s (%s): %s", info['name'], espn_id, e)
             continue
     return results
 
@@ -405,11 +408,11 @@ def update_player_teams(doc_id: str, results: list[dict], players: dict) -> None
         doc_ref = _get_db_ps().collection("users").document(doc_id)
         doc = doc_ref.get()
         if not doc.exists:
-            print(f"⚠️  update_player_teams: doc {doc_id} not found")
+            logger.warning("update_player_teams: doc %s not found", doc_id)
             return
         fields = doc.to_dict()
     except Exception as e:
-        print(f"⚠️  update_player_teams read failed: {e}")
+        logger.warning("update_player_teams read failed: %s", e)
         return
 
     tp = fields.get("tracked_players", {})
@@ -425,9 +428,9 @@ def update_player_teams(doc_id: str, results: list[dict], players: dict) -> None
     if changed:
         try:
             doc_ref.set({"tracked_players": tp}, merge=True)
-            print(f"   Updated {changed} player team(s) in Firestore")
+            logger.info("Updated %d player team(s) in Firestore", changed)
         except Exception as e:
-            print(f"⚠️  update_player_teams write failed: {e}")
+            logger.warning("update_player_teams write failed: %s", e)
 
 def partition_players_to_emails(stats: list[dict], toggles: dict,
                                  players: dict) -> dict:
@@ -714,46 +717,45 @@ def send_player_stats_emails(doc_id: str, to_email: str,
     target_date: today in Israel (YYYY-MM-DD). Yesterday = target_date - 1 day.
     send: if False, dry-run only (print what would be sent).
     """
-    print("\n📊 Multi-player stats mode")
+    logger.info("Multi-player stats mode")
 
     # 1. Load toggles
     toggles = load_player_email_toggles(doc_id)
     if not any(toggles.values()):
-        print("   All player stats email toggles are OFF → skipping.")
+        logger.info("All player stats email toggles are OFF - skipping.")
         return
 
     active = [k for k, v in toggles.items() if v]
-    print(f"   Email toggles: {', '.join(active)}")
+    logger.info("Email toggles: %s", ', '.join(active))
 
     # 2. Load tracked players
     players = load_tracked_players(doc_id)
     if not players:
-        print("   No tracked players found → skipping.")
+        logger.info("No tracked players found - skipping.")
         return
-    print(f"   {len(players)} tracked player(s) enabled")
+    logger.info("%d tracked player(s) enabled", len(players))
 
     # 3. Compute yesterday (Israel time)
     dt = datetime.datetime.strptime(target_date, "%Y-%m-%d")
     yesterday_dt = dt - datetime.timedelta(days=1)
     yesterday_il = yesterday_dt.strftime("%Y-%m-%d")
-    print(f"   Checking games from: {yesterday_il} (Israel time)")
+    logger.info("Checking games from: %s (Israel time)", yesterday_il)
 
     # 4. Scoreboard early exit
     if not check_nba_games_yesterday(yesterday_il):
-        print("   No NBA games yesterday → skipping all player fetching.")
+        logger.info("No NBA games yesterday - skipping all player fetching.")
         return
 
     # 5. Fetch all player stats
-    print(f"   Fetching stats for {len(players)} players (sequential, 0.3s delay)...")
+    logger.info("Fetching stats for %d players (sequential, 0.3s delay)...", len(players))
     stats = fetch_all_player_stats(players, yesterday_il, target_date)
 
     played_count = sum(1 for s in stats if not s.get("dnp"))
     dnp_count    = sum(1 for s in stats if s.get("dnp"))
-    print(f"   Results: {played_count} played, {dnp_count} DNP, "
-          f"{len(players) - played_count - dnp_count} off day")
+    logger.info("Results: %d played, %d DNP, %d off day", played_count, dnp_count, len(players) - played_count - dnp_count)
 
     if not stats:
-        print("   No players played yesterday → no email sent.")
+        logger.info("No players played yesterday - no email sent.")
         return
 
     # 6. Auto-sync team names (side-effect)
@@ -779,21 +781,21 @@ def send_player_stats_emails(doc_id: str, to_email: str,
         plain   = _build_plain_text(bucket_stats)
 
         names = ", ".join(s["player_name"] for s in bucket_stats)
-        print(f"\n   📧 [{email_type}] {len(bucket_stats)} player(s): {names}")
-        print(f"      Subject: {subject}")
+        logger.info("[%s] %d player(s): %s", email_type, len(bucket_stats), names)
+        logger.info("Subject: %s", subject)
 
         if send:
             if emails_sent > 0:
-                print(f"      ⏳ Waiting 5s before next email...")
+                logger.info("Waiting 5s before next email...")
                 time.sleep(5)
 
             ok = _send_one_email(to_email, subject, html, plain)
             if ok:
-                print(f"      ✅ Sent!")
+                logger.info("Email sent!")
                 emails_sent += 1
             else:
-                print(f"      ❌ Failed!")
+                logger.error("Email failed!")
         else:
-            print(f"      (dry-run — not sending)")
+            logger.info("dry-run - not sending")
 
-    print(f"\n   📊 Done: {emails_sent} email(s) sent.")
+    logger.info("Done: %d email(s) sent.", emails_sent)
