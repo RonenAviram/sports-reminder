@@ -468,31 +468,37 @@ def _format_series_summary(series_summary: str, il_date: str = "") -> str:
 # FIREBASE  — multi-user support
 # ─────────────────────────────────────────────────────────────────────────────
 
+_firestore_db_sr = None
+def _get_db():
+    global _firestore_db_sr
+    if _firestore_db_sr is not None:
+        return _firestore_db_sr
+    from google.cloud import firestore
+    _firestore_db_sr = firestore.Client()
+    return _firestore_db_sr
+
 def _firestore_get_doc(collection: str, doc_id: str) -> dict:
-    """Fetch a single Firestore document. Returns raw fields dict or {}."""
-    url = (
-        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/{collection}/{doc_id}"
-        f"?key={FIREBASE_API_KEY}"
-    )
+    """Fetch a single Firestore document via Admin SDK. Returns native dict or {}."""
     try:
-        data = fetch_json(url)
-        return data.get("fields", {})
+        doc = _get_db().collection(collection).document(doc_id).get()
+        return doc.to_dict() if doc.exists else {}
     except Exception as e:
         print(f"⚠️  Could not read Firestore {collection}/{doc_id}: {e}")
         return {}
 
 def _firestore_bool(fields: dict, key: str, default: bool = False) -> bool:
-    """Extract a boolean field from Firestore fields dict."""
-    field = fields.get(key, {})
-    if "booleanValue" in field:
-        return bool(field["booleanValue"])
+    """Read a boolean from a native Firestore dict."""
+    val = fields.get(key, default)
+    if isinstance(val, bool):
+        return val
     return default
 
 def _firestore_string(fields: dict, key: str, default: str = "") -> str:
-    """Extract a string field from Firestore fields dict."""
-    return fields.get(key, {}).get("stringValue", default)
-
+    """Read a string from a native Firestore dict."""
+    val = fields.get(key, default)
+    if isinstance(val, str):
+        return val
+    return default
 
 def load_global_config() -> dict:
     """Load global config (config/global). Returns dict with world_cup_mode etc."""
@@ -504,25 +510,27 @@ def load_global_config() -> dict:
 
 
 def load_user_doc(doc_id: str) -> dict:
-    """Load a full user document from users/{doc_id}. Single read."""
+    """Load a full user document from users/{doc_id}. Single read via Admin SDK."""
     fields = _firestore_get_doc(USERS_COLLECTION, doc_id)
     if not fields:
         return {}
 
-    teams_field = fields.get("teams", {}).get("arrayValue", {}).get("values", [])
+    # Admin SDK returns native Python types — teams is a plain list of dicts
+    teams_raw = fields.get("teams", [])
     teams = []
-    for t in teams_field:
-        m = t.get("mapValue", {}).get("fields", {})
-        enabled_field = m.get("enabled", {})
-        enabled = bool(enabled_field["booleanValue"]) if "booleanValue" in enabled_field else True
-        if not enabled:
-            continue
-        teams.append({
-            "name":     m.get("name",     {}).get("stringValue", ""),
-            "sport":    m.get("sport",    {}).get("stringValue", ""),
-            "leagueId": m.get("leagueId", {}).get("stringValue", ""),
-            "league":   m.get("league",   {}).get("stringValue", ""),
-        })
+    if isinstance(teams_raw, list):
+        for t in teams_raw:
+            if not isinstance(t, dict):
+                continue
+            enabled = t.get("enabled", True)
+            if isinstance(enabled, bool) and not enabled:
+                continue
+            teams.append({
+                "name":     t.get("name", ""),
+                "sport":    t.get("sport", ""),
+                "leagueId": t.get("leagueId", ""),
+                "league":   t.get("league", ""),
+            })
 
     return {
         "doc_id":               doc_id,
@@ -533,49 +541,34 @@ def load_user_doc(doc_id: str) -> dict:
         "weekly_digest":        _firestore_bool(fields, "weekly_digest", False),
         "avdija_stats":         _firestore_bool(fields, "avdija_stats", True),
         "avdija_dedicated_email": _firestore_bool(fields, "avdija_dedicated_email", False),
-        "israeli_players_email":  _firestore_bool(fields, "israeli_players_email", False),
-        "player_stats_email":     _firestore_bool(fields, "player_stats_email", False),
-        "emails_paused": _firestore_bool(fields, "emails_paused", False),
-        "synthetic": _firestore_bool(fields, "synthetic", False),
+        "israeli_players_email": _firestore_bool(fields, "israeli_players_email", False),
+        "player_stats_email":   _firestore_bool(fields, "player_stats_email", False),
+        "emails_paused":        _firestore_bool(fields, "emails_paused", False),
+        "synthetic":            _firestore_bool(fields, "synthetic", False),
     }
 
-
 def load_all_users() -> list[dict]:
-    """Load all active users from users/ collection."""
-    url = (
-        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/{USERS_COLLECTION}"
-        f"?key={FIREBASE_API_KEY}"
-    )
+    """Load all active users from users/ collection via Admin SDK."""
     try:
-        data = fetch_json(url)
+        docs = _get_db().collection(USERS_COLLECTION).stream()
     except Exception as e:
         print(f"⚠️  Could not list users: {e}")
         return []
 
     users = []
-    for doc in data.get("documents", []):
-        doc_path = doc.get("name", "")
-        doc_id = doc_path.rsplit("/", 1)[-1] if "/" in doc_path else ""
-        if not doc_id:
-            continue
-        fields = doc.get("fields", {})
-        status = _firestore_string(fields, "status", "active")
+    for doc in docs:
+        doc_id = doc.id
+        fields = doc.to_dict() or {}
+        status = fields.get("status", "active")
+        if not isinstance(status, str):
+            status = "active"
         if status != "active":
-            print(f"   ⏭️  Skipping user {doc_id} (status={status})")
+            print(f"   ⭏️  Skipping user {doc_id} (status={status})")
             continue
         user = load_user_doc(doc_id)
         if user:
             users.append(user)
     return users
-
-
-# ── Legacy wrappers (backward compat for player_stats.py) ──────────────────
-
-def load_tracked_teams(doc_id: str, enabled_only: bool = True) -> list[dict]:
-    """Legacy wrapper — reads from users/ collection."""
-    user = load_user_doc(doc_id)
-    return user.get("teams", [])
 
 def load_avdija_stats_flag(doc_id: str) -> bool:
     """Legacy wrapper."""
@@ -959,100 +952,39 @@ def _format_series_summary(series_summary: str, il_date: str = "") -> str:
 def load_tracked_teams(doc_id: str, enabled_only: bool = True) -> list[dict]:
     """
     Returns list of dicts: [{name, sport, leagueId, league, enabled}, ...]
-    Uses Firebase REST API — no SDK needed.
+    Uses Firestore Admin SDK.
 
-    enabled_only=True  → skip teams where enabled=false (for dry-run / real send)
-    enabled_only=False → return ALL teams regardless of enabled flag (for validation)
+    enabled_only=True  = skip teams where enabled=false
+    enabled_only=False = return ALL teams regardless of enabled flag
     If a team has no "enabled" field it is treated as enabled=True.
     """
-    url = (
-        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/configs/{doc_id}"
-        f"?key={FIREBASE_API_KEY}"
-    )
-    try:
-        data = fetch_json(url)
-    except Exception as e:
-        print(f"⚠️  Could not read Firestore: {e}")
+    fields = _firestore_get_doc("configs", doc_id)
+    if not fields:
         return []
 
-    fields = data.get("fields", {})
-    teams_field = fields.get("teams", {}).get("arrayValue", {}).get("values", [])
+    teams_raw = fields.get("teams", [])
     teams = []
-    for t in teams_field:
-        m = t.get("mapValue", {}).get("fields", {})
-        # Support optional "enabled" boolean field stored by the React UI
-        enabled_field = m.get("enabled", {})
-        if "booleanValue" in enabled_field:
-            enabled = bool(enabled_field["booleanValue"])
-        else:
-            enabled = True  # absent = enabled
-        if enabled_only and not enabled:
-            continue
-        teams.append({
-            "name":     m.get("name",     {}).get("stringValue", ""),
-            "sport":    m.get("sport",    {}).get("stringValue", ""),
-            "leagueId": m.get("leagueId", {}).get("stringValue", ""),
-            "league":   m.get("league",   {}).get("stringValue", ""),
-            "enabled":  enabled,
-        })
+    if isinstance(teams_raw, list):
+        for t in teams_raw:
+            if not isinstance(t, dict):
+                continue
+            enabled = t.get("enabled", True)
+            if isinstance(enabled, bool) and enabled_only and not enabled:
+                continue
+            elif not isinstance(enabled, bool):
+                enabled = True
+                if enabled_only:
+                    pass  # treat as enabled
+            teams.append({
+                "name":     t.get("name", ""),
+                "sport":    t.get("sport", ""),
+                "leagueId": t.get("leagueId", ""),
+                "league":   t.get("league", ""),
+                "enabled":  enabled if isinstance(enabled, bool) else True,
+            })
     return teams
 
 
-def load_avdija_stats_flag(doc_id: str) -> bool:
-    """Returns True if Avdija stats email is enabled (default: True if field absent)."""
-    url = (
-        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/configs/{doc_id}"
-        f"?key={FIREBASE_API_KEY}"
-    )
-    try:
-        data = fetch_json(url)
-    except Exception:
-        return True  # default to enabled on error
-    avdija_field = data.get("fields", {}).get("avdija_stats", {})
-    if "booleanValue" in avdija_field:
-        return bool(avdija_field["booleanValue"])
-    return True  # absent = enabled
-
-
-def load_weekly_digest_flag(doc_id: str) -> bool:
-    """Returns True if weekly digest email is enabled (default: False — opt-in feature)."""
-    url = (
-        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/configs/{doc_id}"
-        f"?key={FIREBASE_API_KEY}"
-    )
-    try:
-        data = fetch_json(url)
-    except Exception:
-        return False
-    field = data.get("fields", {}).get("weekly_digest", {})
-    if "booleanValue" in field:
-        return bool(field["booleanValue"])
-    return False  # absent = disabled
-
-
-def load_world_cup_mode_flag(doc_id: str) -> bool:
-    """Returns True if World Cup all-games mode is enabled (default: False — opt-in)."""
-    url = (
-        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/configs/{doc_id}"
-        f"?key={FIREBASE_API_KEY}"
-    )
-    try:
-        data = fetch_json(url)
-    except Exception:
-        return False
-    field = data.get("fields", {}).get("world_cup_mode", {})
-    if "booleanValue" in field:
-        return bool(field["booleanValue"])
-    return False  # absent = disabled
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# ESPN  — fetch today's games per league
-# ─────────────────────────────────────────────────────────────────────────────
 def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) -> list[dict]:
     """Returns list of game dicts for today.
     weekly_mode=True skips the NBA 24-hour filter and adds il_date to each game."""
@@ -1464,33 +1396,27 @@ def disable_failing_teams(doc_id: str) -> dict:
     """
     Re-enable ALL teams, then run fresh validation and disable only those
     not found in any league API (status='no_match').
-    This corrects previous false-positive disables (e.g. due to incomplete ESPN data).
     Returns {"disabled": [...], "reenabled": int, "total": int, "error": str|None}
     """
-    import urllib.request as _ur
-    base_url = (
-        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT}"
-        f"/databases/(default)/documents/configs/{doc_id}"
-        f"?key={FIREBASE_API_KEY}"
-    )
-    # --- 1. Fetch raw Firestore doc ---
+    # --- 1. Fetch raw Firestore doc via Admin SDK ---
     try:
-        raw = fetch_json(base_url)
+        doc_ref = _get_db().collection("configs").document(doc_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            return {"disabled": [], "reenabled": 0, "total": 0, "error": "Doc not found"}
+        doc_data = doc.to_dict()
     except Exception as e:
         return {"disabled": [], "reenabled": 0, "total": 0, "error": str(e)}
 
-    raw_values = (raw.get("fields", {})
-                     .get("teams", {})
-                     .get("arrayValue", {})
-                     .get("values", []))
+    teams_list = doc_data.get("teams", [])
+    if not isinstance(teams_list, list):
+        return {"disabled": [], "reenabled": 0, "total": 0, "error": "No teams array"}
 
     # --- 2. Re-enable ALL disabled teams so we get a fresh slate ---
     reenabled = 0
-    for entry in raw_values:
-        fields = entry.get("mapValue", {}).get("fields", {})
-        enabled_field = fields.get("enabled", {})
-        if enabled_field.get("booleanValue") is False:
-            fields["enabled"] = {"booleanValue": True}
+    for t in teams_list:
+        if isinstance(t, dict) and t.get("enabled") is False:
+            t["enabled"] = True
             reenabled += 1
 
     # --- 3. Run validation on ALL teams (all now enabled) ---
@@ -1504,37 +1430,24 @@ def disable_failing_teams(doc_id: str) -> dict:
 
     # --- 4. Disable only the truly failing teams ---
     disabled_names = []
-    for entry in raw_values:
-        fields = entry.get("mapValue", {}).get("fields", {})
-        name      = fields.get("name",     {}).get("stringValue", "")
-        league_id = fields.get("leagueId", {}).get("stringValue", "")
+    for t in teams_list:
+        if not isinstance(t, dict):
+            continue
+        name = t.get("name", "")
+        league_id = t.get("leagueId", "")
         if (name, league_id) in failing:
-            fields["enabled"] = {"booleanValue": False}
-            disabled_names.append(f"{name} [{league_id}]")
+            t["enabled"] = False
+            disabled_names.append(name)
 
-    # --- 4. PATCH only the teams field back to Firestore ---
-    patch_url = base_url + "&updateMask.fieldPaths=teams"
-    body = json.dumps({
-        "fields": {
-            "teams": {"arrayValue": {"values": raw_values}}
-        }
-    }).encode()
-    req = _ur.Request(
-        patch_url, data=body, method="PATCH",
-        headers={"Content-Type": "application/json"}
-    )
+    # --- 5. Write back via Admin SDK ---
     try:
-        with _ur.urlopen(req, timeout=15) as r:
-            r.read()
+        doc_ref.set({"teams": teams_list}, merge=True)
     except Exception as e:
-        return {"disabled": [], "reenabled": reenabled, "total": 0, "error": f"Firestore write failed: {e}"}
+        return {"disabled": disabled_names, "reenabled": reenabled,
+                "total": len(teams_list), "error": f"Write failed: {e}"}
 
-    return {"disabled": disabled_names, "reenabled": reenabled, "total": len(disabled_names), "error": None}
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# MATCHING — find which of your teams play today
-# ─────────────────────────────────────────────────────────────────────────────
+    return {"disabled": disabled_names, "reenabled": reenabled,
+            "total": len(teams_list), "error": None}
 def fetch_league_games(leagues: set, today: str) -> dict:
     """Fetch today's games for a set of league IDs. Returns {league_id: [games]}.
     Called ONCE for all users — the expensive ESPN/API step."""
