@@ -15,6 +15,9 @@ import urllib.request
 import urllib.parse
 import os
 import xml.etree.ElementTree as ET
+import logging
+
+logger = logging.getLogger(__name__)
 
 from email_sender import send_raw_email
 from player_stats import send_player_stats_emails
@@ -483,7 +486,7 @@ def _firestore_get_doc(collection: str, doc_id: str) -> dict:
         doc = _get_db().collection(collection).document(doc_id).get()
         return doc.to_dict() if doc.exists else {}
     except Exception as e:
-        print(f"⚠️  Could not read Firestore {collection}/{doc_id}: {e}")
+        logger.warning("Could not read Firestore %s/%s: %s", collection, doc_id, e)
         return {}
 
 def _firestore_bool(fields: dict, key: str, default: bool = False) -> bool:
@@ -552,7 +555,7 @@ def load_all_users() -> list[dict]:
     try:
         docs = _get_db().collection(USERS_COLLECTION).stream()
     except Exception as e:
-        print(f"⚠️  Could not list users: {e}")
+        logger.warning("Could not list users: %s", e)
         return []
 
     users = []
@@ -563,7 +566,7 @@ def load_all_users() -> list[dict]:
         if not isinstance(status, str):
             status = "active"
         if status != "active":
-            print(f"   ⭏️  Skipping user {doc_id} (status={status})")
+            logger.info("   ⭏️  Skipping user %s (status=%s)", doc_id, status)
             continue
         user = load_user_doc(doc_id)
         if user:
@@ -1010,13 +1013,13 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
             try:
                 all_events.extend(fetch_json(dated_url).get("events", []))
             except Exception as e:
-                print(f"  ⚠️  ESPN fetch failed for {league_id}: {e}")
+                logger.warning("  ESPN fetch failed for %s: %s", league_id, e)
         data = {"events": all_events}
     else:
         try:
             data = fetch_json(f"{url}?dates={today.replace('-', '')}")
         except Exception as e:
-            print(f"  ⚠️  ESPN fetch failed for {league_id}: {e}")
+            logger.warning("  ESPN fetch failed for %s: %s", league_id, e)
             return []
 
     # tomorrow_utc string for date filtering (NBA only)
@@ -1146,13 +1149,13 @@ def fetch_euroleague_games(league_id: str, today: str) -> list[dict]:
         with urllib.request.urlopen(req, timeout=15) as r:
             xml_data = r.read()
     except Exception as e:
-        print(f"  ⚠️  EuroLeague API fetch failed for {league_id}: {e}")
+        logger.warning("  EuroLeague API fetch failed for %s: %s", league_id, e)
         return []
 
     try:
         root = ET.fromstring(xml_data)
     except Exception as e:
-        print(f"  ⚠️  EuroLeague XML parse error for {league_id}: {e}")
+        logger.warning("  EuroLeague XML parse error for %s: %s", league_id, e)
         return []
 
     # Parse today's date for comparison
@@ -1214,7 +1217,7 @@ def fetch_tsdb_games(league_id: str, today: str) -> list[dict]:
     try:
         data = fetch_json(url)
     except Exception as e:
-        print(f"  ⚠️  TheSportsDB fetch failed for {league_id}: {e}")
+        logger.warning("  TheSportsDB fetch failed for %s: %s", league_id, e)
         return []
     events = data.get("events") or []
     games = []
@@ -1542,7 +1545,7 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
 
     def fetch_for_espn_date(date_str: str) -> list[dict]:
         """Fetch all tracked-team matches for one ESPN date in weekly mode (serial)."""
-        print(f"  📅 Fetching {date_str}...")
+        logger.info("  📅 Fetching %s...", date_str)
         games_by_league: dict[str, list] = {}
         for i, lid in enumerate(leagues_needed):
             if lid in ESPN_ENDPOINTS or lid in EUROLEAGUE_COMPETITION_CODES or lid in TSDB_LEAGUES:
@@ -1573,7 +1576,7 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
                         "sport":        tracked_team["sport"],
                     })
                     seen_local.add(game_key)
-        print(f"    → {len(matches)} match(es)")
+        logger.info("    → %s match(es)", len(matches))
         return matches
 
     # Fetch serially (one date at a time) with a pause between dates.
@@ -1583,14 +1586,14 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
         try:
             all_matches.extend(fetch_for_espn_date(d))
         except Exception as e:
-            print(f"  ⚠️  Week fetch failed for {d}: {e}")
+            logger.warning("  Week fetch failed for %s: %s", d, e)
         if i < len(espn_dates) - 1:
             _time.sleep(1.0)  # 1s between dates to avoid ESPN rate limiting
 
     # World Cup mode: fetch all WC games for each ESPN date and merge
     if world_cup_mode:
         tracked_names = {t["name"] for t in tracked}
-        print(f"  🏆 World Cup mode — fetching all WC games for the week...")
+        logger.info("  🏆 World Cup mode — fetching all WC games for the week...")
         for i, d in enumerate(espn_dates):
             try:
                 wc_games = fetch_todays_games("fifa_world_cup", d, weekly_mode=True)
@@ -1615,7 +1618,7 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
                         "is_world_cup": True,
                     })
             except Exception as e:
-                print(f"  ⚠️  WC week fetch failed for {d}: {e}")
+                logger.warning("  WC week fetch failed for %s: %s", d, e)
             if i < len(espn_dates) - 1:
                 _time.sleep(0.5)
 
@@ -1663,7 +1666,7 @@ def fetch_full_tournament_games(tracked_names: set) -> dict:
         espn_dates.append(d.strftime("%Y-%m-%d"))
         d += datetime.timedelta(days=1)
 
-    print(f"  🏆 Fetching {len(espn_dates)} days of World Cup games...")
+    logger.info("  🏆 Fetching %s days of World Cup games...", len(espn_dates))
     all_matches: list[dict] = []
     seen: set = set()
 
@@ -1692,9 +1695,9 @@ def fetch_full_tournament_games(tracked_names: set) -> dict:
                     "sport":        "soccer",
                     "is_world_cup": True,
                 })
-            print(f"    📅 {date_str}: {len(games)} game(s)")
+            logger.info("    📅 %s: %s game(s)", date_str, len(games))
         except Exception as e:
-            print(f"    ⚠️  {date_str}: {e}")
+            logger.warning("    %s: %s", date_str, e)
         if i < len(espn_dates) - 1:
             _time.sleep(0.5)
 
@@ -1708,7 +1711,7 @@ def fetch_full_tournament_games(tracked_names: set) -> dict:
     for day_matches in results.values():
         day_matches.sort(key=lambda m: (m.get("il_date", ""), m["time"]))
 
-    print(f"  ✅ Total: {len(all_matches)} games across {len(results)} days")
+    logger.info("  ✅ Total: %s games across %s days", len(all_matches), len(results))
     return dict(sorted(results.items()))
 
 
@@ -2407,25 +2410,25 @@ def main():
         if a == "--test-user" and i + 1 < len(args):
             test_user_email = args[i + 1]
 
-    print(f"\n🗓️  Sports Reminder — {today}")
-    print("=" * 50)
+    logger.info("\n🗓️  Sports Reminder — %s", today)
+    logger.info("=" * 50")
     if test_user_email:
-        print(f"\U0001f9ea TEST USER MODE: only sending to {test_user_email}")
+        logger.info("\U0001f9ea TEST USER MODE: only sending to %s", test_user_email)
 
     if mock_mode:
-        print("\n🧪 MOCK MODE — using fake teams & games (no network calls)\n")
+        logger.info("\n🧪 MOCK MODE — using fake teams & games (no network calls)\n")
         tracked = MOCK_TEAMS
         matches = MOCK_MATCHES
-        print(f"   Tracked teams ({len(tracked)}):")
+        logger.info("   Tracked teams (%s):", len(tracked))
         for t in tracked:
-            print(f"   • {t['name']}  [{t['league']} / {t['sport']}]")
-        print(f"\n🎯 {len(matches)} mock match(es) today:\n")
+            logger.info("   • %s  [%s / %s]", t['name'], t['league'], t['sport'])
+        logger.info("\n🎯 %s mock match(es) today:\n", len(matches))
         for m in matches:
             emoji = "⚽" if m["sport"] == "soccer" else "🏀"
-            print(f"  {emoji}  {m['away']} @ {m['home']}")
-            print(f"      {m['league_name']}  —  {m['time']} (Israel time)\n")
+            logger.info("  %s  %s @ %s", emoji, m['away'], m['home'])
+            logger.info("      %s  —  %s (Israel time)\n", m['league_name'], m['time'])
         if send_mode:
-            print(f"📧 Sending mock email to ronen6213@gmail.com...")
+            logger.info("📧 Sending mock email to ronen6213@gmail.com...")
             send_email("ronen6213@gmail.com", matches, today)
         else:
             # Show the HTML that would be sent
@@ -2433,92 +2436,92 @@ def main():
             out_path = "/tmp/sports_reminder_preview.html"
             with open(out_path, "w") as f:
                 f.write(html)
-            print(f"📄 Email HTML preview saved to: {out_path}")
-            print("   Open it in a browser to see how the email looks.")
-            print("\n   Run with --mock --send to actually send it.")
+            logger.info("📄 Email HTML preview saved to: %s", out_path)
+            logger.info("   Open it in a browser to see how the email looks.")
+            logger.info("\n   Run with --mock --send to actually send it.")
         return
 
     # ── Full tournament mode (one-off WC schedule) ──────────────────────────
     if tournament_mode:
-        print("\n🏆 Full Tournament mode — fetching all FIFA World Cup 2026 games...")
+        logger.info("\n🏆 Full Tournament mode — fetching all FIFA World Cup 2026 games...")
         all_u = load_all_users()
         if test_user_email:
             all_u = [u for u in all_u if u.get("email","").lower() == test_user_email.lower()]
         tracked = all_u[0]["teams"] if all_u else []
         tracked_names = {t["name"] for t in tracked} if tracked else set()
-        print(f"   {len(tracked_names)} tracked team(s) found")
+        logger.info("   %s tracked team(s) found", len(tracked_names))
         matches_by_day = fetch_full_tournament_games(tracked_names)
         total = sum(len(v) for v in matches_by_day.values())
-        print(f"\n🏆 {total} match(es) found across {len(matches_by_day)} day(s)")
+        logger.info("\n🏆 %s match(es) found across %s day(s)", total, len(matches_by_day))
         for date_str, day_matches in matches_by_day.items():
             dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-            print(f"\n  {dt.strftime('%A, %b')} {dt.day}: {len(day_matches)} game(s)")
+            logger.info("\n  %s %s: %s game(s)", dt.strftime('%A, %b'), dt.day, len(day_matches))
             for m in day_matches:
-                print(f"    ⚽  {m['home']} Vs {m['away']}  —  {m['time']}")
+                logger.info("    ⚽  %s Vs %s  —  %s", m['home'], m['away'], m['time'])
         if send_mode:
-            print(f"\n📧 Sending tournament email to ronen6213@gmail.com...")
+            logger.info("\n📧 Sending tournament email to ronen6213@gmail.com...")
             send_tournament_email("ronen6213@gmail.com", matches_by_day)
         else:
-            print("\nℹ️  Dry-run. Add --send to send the tournament email.")
+            logger.info("\nℹ️  Dry-run. Add --send to send the tournament email.")
         return
 
     # ── Load all users ──────────────────────────────────────────────────────
-    print(f"\n📥 Loading users...")
+    logger.info("\n📥 Loading users...")
     users = load_all_users()
     if test_user_email:
         users = [u for u in users if u.get("email","").lower() == test_user_email.lower()]
-        print(f"   \U0001f9ea TEST MODE: filtered to {len(users)} user(s) matching {test_user_email}")
+        logger.info("   \U0001f9ea TEST MODE: filtered to %s user(s) matching %s", len(users), test_user_email)
     if not users:
-        print("   No active users found. Exiting.")
+        logger.info("   No active users found. Exiting.")
         return
-    print(f"   Found {len(users)} active user(s): {', '.join(u['display_name'] for u in users)}")
+    logger.info("   Found %s active user(s): %s", len(users), ', '.join(u['display_name'] for u in users))
 
     # ── Load global config ────────────────────────────────────────────────
     global_config = load_global_config()
     wc_mode = global_config.get("world_cup_mode", False)
     if wc_mode:
-        print(f"   🏆 World Cup mode ON (global)")
+        logger.info("   🏆 World Cup mode ON (global)")
 
     # ── Weekly digest mode (Saturday night, 20:00 IL) ─────────────────────
     if weekly_mode:
-        print(f"\n📅 Weekly digest mode — {today}")
+        logger.info("\n📅 Weekly digest mode — %s", today)
         for user in users:
             if user.get("emails_paused") and not test_mode:
-                print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
+                logger.info("\n  \u23f8\ufe0f %s: emails paused \u2014 skipping", user['display_name'])
                 continue
             if user.get("synthetic") and not test_user_email:
                 continue
             if not user.get("weekly_digest") and not test_mode:
-                print(f"\n   ⏭️  {user['display_name']}: weekly digest disabled → skipping")
+                logger.info("\n   ⏭️  %s: weekly digest disabled → skipping", user['display_name'])
                 continue
             try:
                 tracked = user["teams"]
                 if not tracked:
-                    print(f"\n   ⏭️  {user['display_name']}: no tracked teams → skipping")
+                    logger.info("\n   ⏭️  %s: no tracked teams → skipping", user['display_name'])
                     continue
-                print(f"\n   👤 {user['display_name']} ({len(tracked)} teams)...")
+                logger.info("\n   👤 %s (%s teams)...", user['display_name'], len(tracked))
                 matches_by_day = find_week_matches(tracked, today, world_cup_mode=wc_mode, now_il_time=None if sim_date else now_israel_time())
                 total = sum(len(v) for v in matches_by_day.values())
-                print(f"      🗓️  {total} match(es) across {len(matches_by_day)} day(s)")
+                logger.info("      🗓️  %s match(es) across %s day(s)", total, len(matches_by_day))
                 if send_mode:
                     ok = send_weekly_email(user["email"], matches_by_day, today)
                 else:
-                    print(f"      ℹ️  Dry-run (add --send)")
+                    logger.info("      ℹ️  Dry-run (add --send)")
             except Exception as e:
-                print(f"   ❌ {user['display_name']}: weekly email failed — {e}")
+                logger.error("   %s: weekly email failed — %s", user['display_name'], e)
         return
 
     # ── Multi-player stats mode (post-game email, 07:00 IL) ──────────────
     if player_stats_m:
-        print(f"\n📊 Multi-player stats mode")
+        logger.info("\n📊 Multi-player stats mode")
         for user in users:
             if user.get("emails_paused") and not test_mode:
-                print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
+                logger.info("\n  \u23f8\ufe0f %s: emails paused \u2014 skipping", user['display_name'])
                 continue
             if user.get("synthetic") and not test_user_email:
                 continue
             try:
-                print(f"\n   👤 {user['display_name']}...")
+                logger.info("\n   👤 %s...", user['display_name'])
                 send_player_stats_emails(
                     doc_id=user["doc_id"],
                     to_email=user["email"],
@@ -2526,7 +2529,7 @@ def main():
                     send=send_mode,
                 )
             except Exception as e:
-                print(f"   ❌ {user['display_name']}: stats email failed — {e}")
+                logger.error("   %s: stats email failed — %s", user['display_name'], e)
         return
 
     # ── Daily morning email (09:00 IL) ────────────────────────────────────
@@ -2536,7 +2539,7 @@ def main():
     for user in users:
         for t in user["teams"]:
             all_leagues.add(t["leagueId"])
-    print(f"\n🔍 Fetching games for {len(all_leagues)} league(s)...")
+    logger.info("\n🔍 Fetching games for %s league(s)...", len(all_leagues))
 
     # 2. Fetch games once per league (the expensive step)
     games_by_league = fetch_league_games(all_leagues, today)
@@ -2549,22 +2552,22 @@ def main():
             for t in user["teams"]:
                 all_tracked_names.add(t["name"])
         wc_games = fetch_all_world_cup_games(today, all_tracked_names)
-        print(f"   🏆 {len(wc_games)} WC game(s) today")
+        logger.info("   🏆 %s WC game(s) today", len(wc_games))
 
     # 3. Per-user: filter matches → send email
     for user in users:
         if user.get("emails_paused") and not test_mode:
-            print(f"\n  \u23f8\ufe0f {user['display_name']}: emails paused \u2014 skipping")
+            logger.info("\n  \u23f8\ufe0f %s: emails paused \u2014 skipping", user['display_name'])
             continue
         if user.get("synthetic") and not test_user_email:
             continue
         try:
             tracked = user["teams"]
             if not tracked and not wc_mode:
-                print(f"\n   ⏭️  {user['display_name']}: no tracked teams → skipping")
+                logger.info("\n   ⏭️  %s: no tracked teams → skipping", user['display_name'])
                 continue
 
-            print(f"\n   👤 {user['display_name']} ({len(tracked)} teams)")
+            logger.info("\n   👤 %s (%s teams)", user['display_name'], len(tracked))
 
             # Filter pre-fetched games by this user's teams
             matches = filter_matches_for_user(tracked, games_by_league, today)
@@ -2596,28 +2599,29 @@ def main():
 
             wc_count = sum(1 for m in matches if m.get("is_world_cup") or m.get("league_id") == "fifa_world_cup")
             other_count = len(matches) - wc_count
-            print(f"      🎯 {len(matches)} match(es) ({wc_count} WC + {other_count} other)")
+            logger.info("      🎯 %s match(es) (%s WC + %s other)", len(matches), wc_count, other_count)
 
             if test_mode:
                 if not matches:
                     matches = [{"home": "Real Madrid", "away": "FC Barcelona",
                         "time": "21:00", "status": "Scheduled",
                         "tracked_team": "FC Barcelona", "league_name": "La Liga", "sport": "soccer"}]
-                print(f"      📧 Test email → {user['email']}")
+                logger.info("      📧 Test email → %s", user['email'])
                 send_email(user["email"], matches, today)
 
             elif send_mode:
                 if matches:
-                    print(f"      📧 Sending → {user['email']}")
+                    logger.info("      📧 Sending → %s", user['email'])
                     ok = send_email(user["email"], matches, today)
                 else:
-                    print(f"      📭 No matches → no email")
+                    logger.info("      📭 No matches → no email")
 
             else:
-                print(f"      ℹ️  Dry-run (add --send)")
+                logger.info("      ℹ️  Dry-run (add --send)")
 
         except Exception as e:
-            print(f"   ❌ {user['display_name']}: daily email failed — {e}")
+            logger.error("   %s: daily email failed — %s", user['display_name'], e)
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
     main()
