@@ -18,6 +18,9 @@ import datetime
 import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
+import logging
+
+logger = logging.getLogger(__name__)
 import traceback
 import subprocess
 
@@ -318,7 +321,7 @@ def run_check_with_retry(check_fn, *args, retries: int = 3, delay: float = 5.0) 
         # Only retry on transient errors
         if result["status"] in ("connection_error", "http_error"):
             if attempt < retries - 1:
-                print(f"  ⚠️  {result['league']} failed (attempt {attempt+1}/{retries}), retrying in {delay}s...")
+                logger.warning("%s failed (attempt %d/%d), retrying in %ds...", result['league'], attempt+1, retries, delay)
                 time.sleep(delay)
             continue
         # Structure/parse errors — don't retry
@@ -330,9 +333,7 @@ def run_check_with_retry(check_fn, *args, retries: int = 3, delay: float = 5.0) 
 
 def run_synthetic_email_test() -> dict:
     """Run sports_reminder.py with synthetic user to test end-to-end email flow."""
-    print("\n" + "=" * 60)
-    print("\xf0\x9f\xa7\xaa Synthetic Email Test")
-    print("=" * 60)
+    logger.info("Synthetic Email Test - starting")
     result = {
         "api": "synthetic_email",
         "endpoint": "sports_reminder.py --send --no-stats --test-user synthetic",
@@ -354,19 +355,19 @@ def run_synthetic_email_test() -> dict:
             # Get last 500 chars of stderr or stdout for diagnostics
             err_output = (proc.stderr or proc.stdout or "no output")[-500:]
             result["error"] = f"exit code {proc.returncode}: {err_output}"
-            print(f"  \xe2\x9d\x8c FAILED (exit {proc.returncode})")
+            logger.error("Synthetic FAILED (exit %d)", proc.returncode)
         else:
-            print(f"  \xe2\x9c\x85 OK ({result['response_time_ms']}ms)")
+            logger.info("Synthetic OK (%dms)", result['response_time_ms'])
     except subprocess.TimeoutExpired:
         result["response_time_ms"] = int((_time.time() - t0) * 1000)
         result["status"] = "timeout"
         result["error"] = "Subprocess timed out after 180s"
-        print("  \xe2\x9d\x8c TIMEOUT (180s)")
-    except Exception as e:
+        logger.error("Synthetic TIMEOUT (180s)")
+    except Exception:
         result["response_time_ms"] = int((_time.time() - t0) * 1000)
         result["status"] = "exception"
-        result["error"] = str(e)
-        print(f"  \xe2\x9d\x8c ERROR: {e}")
+        result["error"] = traceback.format_exc()
+        logger.exception("Synthetic ERROR")
     return result
 
 def run_all_checks() -> list[dict]:
@@ -430,8 +431,8 @@ def save_to_firestore(results: list[dict]):
     try:
         from google.cloud import firestore
         db = firestore.Client()
-    except Exception as e:
-        print(f"⚠️  Firestore not available: {e}")
+    except Exception:
+        logger.warning("Firestore not available for health check logging", exc_info=True)
         return
 
     timestamp = datetime.datetime.utcnow()
@@ -545,6 +546,7 @@ def send_alert_email(results: list[dict]):
 # ── CLI entrypoint ───────────────────────────────────────────────────────────
 
 def main():
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
     dry_run = "--dry-run" in sys.argv
 
     print("=" * 60)
