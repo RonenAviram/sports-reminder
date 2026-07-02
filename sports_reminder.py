@@ -16,7 +16,7 @@ import urllib.parse
 import os
 import xml.etree.ElementTree as ET
 
-from email_sender import send_raw_email, GMAIL_SENDER, GMAIL_APP_PASSWORD
+from email_sender import send_raw_email
 from player_stats import send_player_stats_emails
 
 # DST-aware timezone support (zoneinfo is stdlib since Python 3.9)
@@ -2425,8 +2425,8 @@ def main():
             print(f"  {emoji}  {m['away']} @ {m['home']}")
             print(f"      {m['league_name']}  —  {m['time']} (Israel time)\n")
         if send_mode:
-            print(f"📧 Sending mock email to {GMAIL_SENDER}...")
-            send_email(GMAIL_SENDER, matches, today)
+            print(f"📧 Sending mock email to ronen6213@gmail.com...")
+            send_email("ronen6213@gmail.com", matches, today)
         else:
             # Show the HTML that would be sent
             html = build_email_html(matches, today)
@@ -2456,8 +2456,8 @@ def main():
             for m in day_matches:
                 print(f"    ⚽  {m['home']} Vs {m['away']}  —  {m['time']}")
         if send_mode:
-            print(f"\n📧 Sending tournament email to {GMAIL_SENDER}...")
-            send_tournament_email(GMAIL_SENDER, matches_by_day)
+            print(f"\n📧 Sending tournament email to ronen6213@gmail.com...")
+            send_tournament_email("ronen6213@gmail.com", matches_by_day)
         else:
             print("\nℹ️  Dry-run. Add --send to send the tournament email.")
         return
@@ -2521,8 +2521,7 @@ def main():
                 print(f"\n   👤 {user['display_name']}...")
                 send_player_stats_emails(
                     doc_id=user["doc_id"],
-                    gmail_user=GMAIL_SENDER,
-                    gmail_pass=GMAIL_APP_PASSWORD,
+                    to_email=user["email"],
                     target_date=today,
                     send=send_mode,
                 )
