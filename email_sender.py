@@ -4,9 +4,7 @@ email_sender.py — Email abstraction layer for SportsReminder.
 All email sending goes through send_raw_email(). Swap the provider
 here without touching any business logic.
 
-Provider selection (automatic):
-  - If RESEND_API_KEY is set  → Resend API  (preferred)
-  - If GMAIL_APP_PASSWORD set → Gmail SMTP  (legacy fallback)
+Provider: Resend API (RESEND_API_KEY env var required).
 
 Email logging:
   Every send attempt is logged to Firestore collection 'email_logs'
@@ -23,9 +21,6 @@ import datetime
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 RESEND_FROM    = os.environ.get("RESEND_FROM", "Sports Reminder <noreply@sportsreminder.pro>")
 
-# Gmail SMTP (legacy fallback)
-GMAIL_SENDER       = "ronen6213@gmail.com"
-GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 
 
 def _send_via_resend(to: str, subject: str, html: str, plain: str) -> tuple:
@@ -53,30 +48,6 @@ def _send_via_resend(to: str, subject: str, html: str, plain: str) -> tuple:
         print(f"❌  Email failed ({to}, Resend): {e}")
         return False, ""
 
-
-def _send_via_gmail(to: str, subject: str, html: str, plain: str) -> bool:
-    """Send email via Gmail SMTP (legacy fallback)."""
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
-    from email.header import Header
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = Header(subject, "utf-8")
-    msg["From"]    = GMAIL_SENDER
-    msg["To"]      = to
-    msg.attach(MIMEText(plain, "plain", "utf-8"))
-    msg.attach(MIMEText(html, "html", "utf-8"))
-
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_SENDER, to, msg.as_string())
-        print(f"✅  Email sent to {to} (Gmail)")
-        return True
-    except Exception as e:
-        print(f"❌  Email failed ({to}, Gmail): {e}")
-        return False
 
 
 # ── Firestore logging (best-effort) ──────────────────────────────────────────────
@@ -131,10 +102,7 @@ def send_raw_email(to: str, subject: str, html: str, plain: str,
     """
     Send a single email.
 
-    Provider auto-selected:
-      - RESEND_API_KEY set → Resend API
-      - GMAIL_APP_PASSWORD set → Gmail SMTP
-      - Neither → error
+    Provider: Resend API (RESEND_API_KEY required).
 
     Args:
         to:         recipient email address
@@ -152,13 +120,8 @@ def send_raw_email(to: str, subject: str, html: str, plain: str,
                    "" if ok else "send failed", resend_email_id=resend_id, synthetic=synthetic)
         return ok
 
-    if GMAIL_APP_PASSWORD:
-        ok = _send_via_gmail(to, subject, html, plain)
-        _log_email(to, subject, email_type, "sent" if ok else "failed", "gmail",
-                   "" if ok else "send failed", synthetic=synthetic)
-        return ok
 
     print("❌  No email provider configured.")
-    print("    Set RESEND_API_KEY (preferred) or GMAIL_APP_PASSWORD (legacy).")
+    print("    Set RESEND_API_KEY environment variable.")
     _log_email(to, subject, email_type, "failed", "none", "no provider configured", synthetic=synthetic)
     return False
