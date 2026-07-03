@@ -6,6 +6,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY email_sender.py .
+COPY config.py .
 COPY sports_reminder.py .
 COPY player_stats.py .
 COPY health_check.py .
