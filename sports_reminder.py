@@ -2411,7 +2411,7 @@ def main():
             test_user_email = args[i + 1]
 
     logger.info("\n🗓️  Sports Reminder — %s", today)
-    logger.info("=" * 50")
+    logger.info("%s", "=" * 50)
     if test_user_email:
         logger.info("\U0001f9ea TEST USER MODE: only sending to %s", test_user_email)
 
