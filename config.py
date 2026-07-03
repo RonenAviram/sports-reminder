@@ -1,5 +1,24 @@
 """SportsReminder configuration constants."""
 
+__all__ = [
+    "FIREBASE_PROJECT",
+    "FIREBASE_API_KEY",
+    "USERS_COLLECTION",
+    "GLOBAL_CONFIG_PATH",
+    "TIMEZONE_OFFSET",
+    "PLAYER_WATCH",
+    "ESPN_ENDPOINTS",
+    "TSDB_LEAGUES",
+    "TSDB_LEAGUE_IDS",
+    "TSDB_SEASON",
+    "TSDB_FREE_KEY",
+    "EUROLEAGUE_COMPETITION_CODES",
+    "NOISE_TOKENS",
+    "TEAM_ALIASES",
+    "_ESPN_ABBR_TO_ISO2",
+    "_SPECIAL_FLAGS",
+]
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG — edit these before first run
 # ─────────────────────────────────────────────────────────────────────────────
