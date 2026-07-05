@@ -663,12 +663,12 @@ def build_player_stats_email_html(players: list[dict], email_type: str) -> str:
           <a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:white;text-decoration:none;font-size:13px;font-weight:600;">📱 Get updates on WhatsApp</a>
         </div>
         <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb; text-align:center;">
-          <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=stats"
+          <a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=stats"
              style="font-size:12px; color:#3b82f6; text-decoration:underline;">
             ✏️ Manage your players here
           </a>
           <div style="margin-top:8px;font-size:12px;color:#999;">
-            <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
+            <a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
           </div>
         </div>
       </div>
@@ -704,7 +704,7 @@ def _build_plain_text(players: list[dict]) -> str:
                 f"   FG {ps['fg'].replace('-','/')} · 3PT {ps['three_pt'].replace('-','/')} · FT {ps['ft'].replace('-','/')}"
                 f" · {ps['stl']} stl · {ps['blk']} blk · {ps['to']} to · {ps['pf']} pf"
             )
-    return "\n\n".join(lines) + "\n\nEdit players: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=stats\nUnsubscribe: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe"
+    return "\n\n".join(lines) + "\n\nEdit players: https://app.sportsreminder.pro?utm_source=email&utm_medium=stats\nUnsubscribe: https://app.sportsreminder.pro?utm_source=email&utm_medium=unsubscribe"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
