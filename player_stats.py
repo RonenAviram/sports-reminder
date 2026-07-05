@@ -93,6 +93,7 @@ DEFAULT_PLAYERS = {
     "4683021": {"name": "Deni Avdija",    "tags": ["israeli"], "tier": "israeli"},
     "5242502": {"name": "Ben Saraf",      "tags": ["israeli"], "tier": "israeli"},
     "5107173": {"name": "Danny Wolf",     "tags": ["israeli"], "tier": "israeli"},
+    "5106058": {"name": "Emanuel Sharp",  "tags": ["israeli"], "tier": "israeli"},
 }
 
 # Avdija ESPN ID — used for dedicated email routing
