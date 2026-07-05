@@ -843,12 +843,12 @@ def build_tournament_email_html(matches_by_day: dict) -> str:
           <a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:white;text-decoration:none;font-size:13px;font-weight:600;">📱 Get updates on WhatsApp</a>
         </div>
         <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb; text-align:center;">
-          <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=tournament"
+          <a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=tournament"
              style="font-size:12px; color:#3b82f6; text-decoration:underline;">
             ✏️ Edit your teams here
           </a>
           <div style="margin-top:8px;font-size:12px;color:#999;">
-            <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
+            <a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
           </div>
         </div>
       </div>
@@ -1188,12 +1188,12 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
           <a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:white;text-decoration:none;font-size:13px;font-weight:600;">📱 Get updates on WhatsApp</a>
         </div>
         <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb; text-align:center;">
-          <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=daily"
+          <a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=daily"
              style="font-size:12px; color:#3b82f6; text-decoration:underline;">
             ✏️ Edit your teams here
           </a>
           <div style="margin-top:8px;font-size:12px;color:#999;">
-            <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
+            <a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
           </div>
         </div>
       </div>
@@ -1247,7 +1247,7 @@ def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict
                           f"   {ps['min']} min · {ps['pts']} pts · {ps['reb']} reb · {ps['ast']} ast · {pm_str}\n"
                           f"   FG {ps['fg'].replace('-','/')} · 3PT {ps['three_pt'].replace('-','/')} · FT {ps['ft'].replace('-','/')}"
                           f" · {ps['stl']} stl · {ps['blk']} blk · {ps['to']} to · {ps['pf']} pf\n")
-    plain += f"\nEdit your teams: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=daily"
+    plain += f"\nEdit your teams: https://app.sportsreminder.pro?utm_source=email&utm_medium=daily"
 
     html = build_email_html(matches, today, player_stats)
     return send_raw_email(to, subject, html, plain, email_type="morning")
@@ -1374,12 +1374,12 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
           <a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:white;text-decoration:none;font-size:13px;font-weight:600;">📱 Get updates on WhatsApp</a>
         </div>
         <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb; text-align:center;">
-          <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=weekly"
+          <a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=weekly"
              style="font-size:12px; color:#3b82f6; text-decoration:underline;">
             ✏️ Edit your teams here
           </a>
           <div style="margin-top:8px;font-size:12px;color:#999;">
-            <a href="https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
+            <a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
           </div>
         </div>
       </div>
@@ -1395,7 +1395,7 @@ def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
 
 
     if total == 0:
-        plain = f"No matches this week for your teams. Enjoy the break! ⚽🏀\n\nEdit your teams: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=weekly"
+        plain = f"No matches this week for your teams. Enjoy the break! ⚽🏀\n\nEdit your teams: https://app.sportsreminder.pro?utm_source=email&utm_medium=weekly"
     else:
         plain = f"Upcoming matches — {week_lbl} (Israel time)\n\n"
         for date_str, matches in matches_by_day.items():
@@ -1414,7 +1414,7 @@ def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
                     _joined = " · ".join(parts)
                     plain += f"      {_joined}\n"
             plain += "\n"
-        plain += f"Edit your teams: https://sports-reminder-ui.vercel.app?utm_source=email&utm_medium=weekly"
+        plain += f"Edit your teams: https://app.sportsreminder.pro?utm_source=email&utm_medium=weekly"
 
     html = build_weekly_email_html(matches_by_day, start_date)
     return send_raw_email(to, subject, html, plain, email_type="weekly")
