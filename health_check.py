@@ -513,7 +513,7 @@ def send_alert_email(results: list[dict]):
             {rows}
         </table>
         <p style="color:#666;font-size:13px">This alert was sent by the SportsReminder health check system.<br>
-        Check the Admin tab for full details: <a href="https://sports-reminder-ui.vercel.app">Admin Dashboard</a></p>
+        Check the Admin tab for full details: <a href="https://app.sportsreminder.pro">Admin Dashboard</a></p>
     </div>"""
 
         plain_lines = [f"⚠️ API Health Check Failed — {len(failed)} check(s) failed", ""]
@@ -533,7 +533,7 @@ def send_alert_email(results: list[dict]):
             <p style="color:#666;margin-top:0">{timestamp}</p>
             <p><strong>{ok_count}</strong> of <strong>{total}</strong> checks passed{expected_note}.</p>
             <p style="color:#666;font-size:13px">Synthetic email test included.<br>
-            <a href="https://sports-reminder-ui.vercel.app">Admin Dashboard</a></p>
+            <a href="https://app.sportsreminder.pro">Admin Dashboard</a></p>
         </div>"""
 
         plain = f"✅ Health Check Passed — {ok_count}/{total} OK{expected_note}\nSynthetic email test included."
