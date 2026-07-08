@@ -722,7 +722,7 @@ def fetch_all_world_cup_games(today: str, tracked_names: set[str] | None = None)
     return matches
 
 
-def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool = False, now_il_time: str = None) -> dict:
+def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool = False, now_il_time: str = None, knockout_follow: dict = None) -> dict:
     """Fetch matches for 7 days starting from start_date (serial).
     Games are bucketed by their *display date* — for games 00:00-04:59 IL this is
     il_date minus 1 day (they belong to the previous evening), others use il_date.
@@ -741,6 +741,12 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
     ]
 
     leagues_needed = set(t["leagueId"] for t in tracked)
+
+    # Add knockout-followed leagues to fetch list
+    if knockout_follow:
+        for ko_league, enabled in knockout_follow.items():
+            if enabled:
+                leagues_needed.add(ko_league)
 
     def fetch_for_espn_date(date_str: str) -> list[dict]:
         """Fetch all tracked-team matches for one ESPN date in weekly mode (serial)."""
@@ -775,6 +781,39 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
                         "sport":        tracked_team["sport"],
                     })
                     seen_local.add(game_key)
+
+        # Knockout games from followed tournaments (weekly)
+        if knockout_follow:
+            for ko_league, enabled in knockout_follow.items():
+                if not enabled:
+                    continue
+                ko_games = games_by_league.get(ko_league, [])
+                for game in ko_games:
+                    if not is_knockout_game(game):
+                        continue
+                    if "il_date" not in game:
+                        game["il_date"] = date_str
+                    if "display_date" not in game:
+                        game["display_date"] = _compute_display_date(game["il_date"], game.get("time", "TBD"))
+                    game_key = f"{game['home']}_{game['away']}_{ko_league}"
+                    if game_key in seen_local:
+                        # Already included as tracked-team match - add knockout badge
+                        for m in matches:
+                            mk = f"{m['home']}_{m['away']}_{m.get('league_id', '')}"
+                            if mk == game_key:
+                                m["knockout_stage"] = get_knockout_stage_name(game)
+                        continue
+                    league_display = _KNOCKOUT_LEAGUE_NAMES.get(ko_league, ko_league)
+                    sport = _KNOCKOUT_LEAGUE_SPORTS.get(ko_league, "soccer")
+                    matches.append({
+                        **game,
+                        "tracked_team": "",
+                        "league_name": league_display,
+                        "sport": sport,
+                        "knockout_stage": get_knockout_stage_name(game),
+                    })
+                    seen_local.add(game_key)
+
         logger.info("    → %s match(es)", len(matches))
         return matches
 
@@ -1458,6 +1497,11 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
                 t_note = m.get("tournament_note", "")
                 if t_note:
                     tournament_html = f'<div style="font-size:11px; color:#b45309; margin-top:2px; font-style:italic;">{t_note}</div>'
+                # Knockout badge
+                knockout_html = ""
+                ko_stage = m.get("knockout_stage", "")
+                if ko_stage:
+                    knockout_html = f'<div style="font-size:11px; color:#6b7280; margin-top:2px;">\U0001F3C6 {ko_stage}</div>'
                 # Time display — TBD gets a muted style; "If Necessary" gets extra note
                 is_if_necessary = "if necessary" in p_note.lower()
                 if m["time"] == "TBD":
@@ -1496,6 +1540,7 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
                     <div style="font-size:12px; color:#666; margin-top:2px;">{m['league_name']}</div>
                     {playoff_html}
                     {tournament_html}
+                    {knockout_html}
                     {gcal_html}
                   </td>
                   <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0; text-align:right; white-space:nowrap;">
@@ -1705,7 +1750,7 @@ def main():
                     logger.info("\n   ⏭️  %s: no tracked teams → skipping", user['display_name'])
                     continue
                 logger.info("\n   👤 %s (%s teams)...", user['display_name'], len(tracked))
-                matches_by_day = find_week_matches(tracked, today, world_cup_mode=wc_mode, now_il_time=None if sim_date else now_israel_time())
+                matches_by_day = find_week_matches(tracked, today, world_cup_mode=wc_mode, now_il_time=None if sim_date else now_israel_time(), knockout_follow=user.get("knockout_follow", {}))
                 total = sum(len(v) for v in matches_by_day.values())
                 logger.info("      🗓️  %s match(es) across %s day(s)", total, len(matches_by_day))
                 if send_mode:
