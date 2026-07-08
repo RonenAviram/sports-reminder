@@ -157,11 +157,14 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
 
         # Tournament round/group info (World Cup, Champions League, etc.)
         tournament_note = ""
-        if league_id == "fifa_world_cup":
+        if league_id in ("fifa_world_cup", "champions_league", "europa_league"):
             for note in comp.get("notes", []):
                 headline = note.get("headline", "")
                 if headline:
                     tournament_note = headline  # e.g. "Group A", "Round of 16"
+
+        # Season slug for knockout detection (ESPN tournaments)
+        season_slug = event.get("season", {}).get("slug", "")
 
         games.append({
             "home":      home["team"]["displayName"],
@@ -176,6 +179,7 @@ def fetch_todays_games(league_id: str, today: str, weekly_mode: bool = False) ->
             "series_summary": series_summary,
             "playoff_note":   playoff_note,
             "tournament_note": tournament_note,
+            "season_slug": season_slug,
         })
     return games
 
@@ -232,6 +236,8 @@ def fetch_euroleague_games(league_id: str, today: str) -> list[dict]:
 
         home = (game.findtext("hometeam") or "").strip().title()
         away = (game.findtext("awayteam") or "").strip().title()
+        el_round = (game.findtext("round") or "").strip()
+        el_group = (game.findtext("group") or "").strip()
         # schedules uses <startime>; results used <time>
         time_raw = (game.findtext("startime") or game.findtext("time") or "").strip()
 
@@ -254,6 +260,8 @@ def fetch_euroleague_games(league_id: str, today: str) -> list[dict]:
             "status":    "Scheduled",
             "league_id": league_id,
             "display_date": _compute_display_date(today, time_str),
+            "el_round": el_round,
+            "el_group": el_group,
         })
     return games
 
@@ -514,8 +522,117 @@ def fetch_league_games(leagues: set, today: str) -> dict:
     return games_by_league
 
 
-def filter_matches_for_user(tracked: list[dict], games_by_league: dict, today: str) -> list[dict]:
-    """Filter pre-fetched games by a user's tracked teams."""
+# -----------------------------------------------------------------------------
+# KNOCKOUT DETECTION - identify playoff/knockout games per tournament
+# -----------------------------------------------------------------------------
+KNOCKOUT_TOURNAMENTS = {
+    "fifa_world_cup", "champions_league", "europa_league",
+    "nba", "euroleague", "eurocup",
+}
+
+# ESPN season.slug values that are NOT knockout
+_ESPN_NON_KNOCKOUT_SLUGS = {"group-stage", "league-phase"}
+
+# EuroCup knockout round codes
+_EUROCUP_KNOCKOUT_ROUNDS = {"8F", "4F", "2F", "Final"}
+
+# Stage name display mapping for ESPN season.slug
+_KNOCKOUT_STAGE_NAMES = {
+    "knockout-round-playoffs": "Knockout playoffs",
+    "round-of-32": "Round of 32",
+    "round-of-16": "Round of 16",
+    "quarterfinals": "Quarter-final",
+    "semifinals": "Semi-final",
+    "3rd-place-match": "3rd place",
+    "final": "Final",
+}
+
+_KNOCKOUT_LEAGUE_NAMES = {
+    "fifa_world_cup": "FIFA World Cup",
+    "champions_league": "Champions League",
+    "europa_league": "Europa League",
+    "nba": "NBA",
+    "euroleague": "EuroLeague",
+    "eurocup": "EuroCup",
+}
+
+_KNOCKOUT_LEAGUE_SPORTS = {
+    "fifa_world_cup": "soccer",
+    "champions_league": "soccer",
+    "europa_league": "soccer",
+    "nba": "basketball",
+    "euroleague": "basketball",
+    "eurocup": "basketball",
+}
+
+
+def is_knockout_game(match: dict) -> bool:
+    """Check if a match is a knockout/playoff game."""
+    league_id = match.get("league_id", "")
+
+    # ESPN-based tournaments (WC, UCL, Europa)
+    if league_id in ("fifa_world_cup", "champions_league", "europa_league"):
+        slug = match.get("season_slug", "")
+        return slug != "" and slug not in _ESPN_NON_KNOCKOUT_SLUGS
+
+    # NBA: playoff_note ends with "Finals" (NBA Finals + Conference Finals)
+    if league_id == "nba":
+        note = match.get("playoff_note", "")
+        return note.endswith("Finals") or " Finals " in note
+
+    # EuroLeague: round FF (Final Four)
+    if league_id == "euroleague":
+        return match.get("el_round", "") == "FF"
+
+    # EuroCup: knockout rounds (8F, 4F, 2F, Final)
+    if league_id == "eurocup":
+        return match.get("el_round", "") in _EUROCUP_KNOCKOUT_ROUNDS
+
+    return False
+
+
+def get_knockout_stage_name(match: dict) -> str:
+    """Get human-readable knockout stage name for email display."""
+    league_id = match.get("league_id", "")
+
+    # ESPN tournaments
+    if league_id in ("fifa_world_cup", "champions_league", "europa_league"):
+        slug = match.get("season_slug", "")
+        return _KNOCKOUT_STAGE_NAMES.get(slug, slug.replace("-", " ").title())
+
+    # NBA: extract from playoff_note
+    if league_id == "nba":
+        note = match.get("playoff_note", "")
+        if "NBA Finals" in note:
+            game_part = note.split(" - ")[-1] if " - " in note else ""
+            return ("Final " + game_part).strip() if game_part else "Final"
+        if "Finals" in note:
+            conf = note.split(" Finals")[0]
+            game_part = note.split(" - ")[-1] if " - " in note else ""
+            label = conf + " Final"
+            return (label + " " + game_part).strip() if game_part else label
+        return note
+
+    # EuroLeague: use group field for detail
+    if league_id == "euroleague":
+        group = match.get("el_group", "").strip().upper()
+        if "SEMIFINAL" in group:
+            return "Semi-final"
+        if "CHAMPIONSHIP" in group:
+            return "Final"
+        return "Final Four"
+
+    # EuroCup: use round field
+    if league_id == "eurocup":
+        el_round = match.get("el_round", "")
+        mapping = {"8F": "Round of 16", "4F": "Quarter-final", "2F": "Semi-final", "Final": "Final"}
+        return mapping.get(el_round, el_round)
+
+    return ""
+
+
+def filter_matches_for_user(tracked: list[dict], games_by_league: dict, today: str, knockout_follow: dict = None) -> list[dict]:
+    """Filter pre-fetched games by a user's tracked teams + knockout tournaments."""
     matches = []
     seen = set()
 
@@ -535,6 +652,35 @@ def filter_matches_for_user(tracked: list[dict], games_by_league: dict, today: s
                     "tracked_team": tracked_team["name"],
                     "league_name":  tracked_team.get("league") or league_id,
                     "sport":        tracked_team["sport"],
+                })
+                seen.add(game_key)
+
+    # Knockout games from followed tournaments
+    if knockout_follow:
+        for ko_league, enabled in knockout_follow.items():
+            if not enabled:
+                continue
+            ko_games = games_by_league.get(ko_league, [])
+            for game in ko_games:
+                if not is_knockout_game(game):
+                    continue
+                game_key = f"{game['home']}_{game['away']}_{ko_league}"
+                if game_key in seen:
+                    # Already included as tracked-team match - add knockout badge
+                    for m in matches:
+                        mk = f"{m['home']}_{m['away']}_{m.get('league_id', '')}"
+                        if mk == game_key:
+                            m["knockout_stage"] = get_knockout_stage_name(game)
+                    continue
+                # New knockout-only match
+                league_display = _KNOCKOUT_LEAGUE_NAMES.get(ko_league, ko_league)
+                sport = _KNOCKOUT_LEAGUE_SPORTS.get(ko_league, "soccer")
+                matches.append({
+                    **game,
+                    "tracked_team": "",
+                    "league_name": league_display,
+                    "sport": sport,
+                    "knockout_stage": get_knockout_stage_name(game),
                 })
                 seen.add(game_key)
 
@@ -1029,9 +1175,14 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
         p_note  = m.get("playoff_note", "")
         if p_note:
             playoff_html = f'<div style="font-size:11px; color:#9333ea; margin-top:2px; font-style:italic;">{p_note}</div>'
-        # Tournament round info (World Cup)
+        # Tournament round info (World Cup, UCL, Europa)
         tournament_html = ""
         t_note = m.get("tournament_note", "")
+        # Knockout stage badge
+        knockout_html = ""
+        ko_stage = m.get("knockout_stage", "")
+        if ko_stage:
+            knockout_html = f'<div style="font-size:11px; color:#6b7280; margin-top:2px;">\U0001F3C6 {ko_stage}</div>'
         if t_note:
             tournament_html = f'<div style="font-size:11px; color:#b45309; margin-top:2px; font-style:italic;">{t_note}</div>'
         # Time display — TBD gets a muted style; "If Necessary" gets extra note
@@ -1093,6 +1244,7 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
             <div style="font-size:13px; color:#666; margin-top:2px;">{m['league_name']}</div>
             {playoff_html}
             {tournament_html}
+            {knockout_html}
             {gcal_html}
           </td>
           <td style="padding:12px 16px; border-bottom:1px solid #f0f0f0; text-align:right;">
@@ -1587,11 +1739,15 @@ def main():
 
     # ── Daily morning email (09:00 IL) ────────────────────────────────────
 
-    # 1. Collect all unique leagues from all users
+    # 1. Collect all unique leagues from all users (tracked teams + knockout follows)
     all_leagues = set()
     for user in users:
         for t in user["teams"]:
             all_leagues.add(t["leagueId"])
+        # Add knockout-followed leagues so their games are fetched too
+        for ko_league, enabled in user.get("knockout_follow", {}).items():
+            if enabled:
+                all_leagues.add(ko_league)
     logger.info("\n🔍 Fetching games for %s league(s)...", len(all_leagues))
 
     # 2. Fetch games once per league (the expensive step)
@@ -1623,7 +1779,8 @@ def main():
             logger.info("\n   👤 %s (%s teams)", user['display_name'], len(tracked))
 
             # Filter pre-fetched games by this user's teams
-            matches = filter_matches_for_user(tracked, games_by_league, today)
+            knockout_follow = user.get("knockout_follow", {})
+            matches = filter_matches_for_user(tracked, games_by_league, today, knockout_follow=knockout_follow)
 
             # Merge WC games if world_cup_mode is on
             if wc_mode and wc_games:
