@@ -1197,199 +1197,192 @@ def _gcal_url(match: dict, today: str) -> str | None:
 
 
 def build_email_html(matches: list[dict], today: str, player_stats: list[dict] | None = None) -> str:
-    sport_emoji = {"soccer": "⚽", "basketball": "🏀"}
-    rows = ""
+    """Build Stadium Lights themed daily email HTML."""
+    league_names = {"nba": "NBA", "premier_league": "Premier League", "la_liga": "La Liga",
+                    "bundesliga": "Bundesliga", "serie_a": "Serie A", "ligue_1": "Ligue 1",
+                    "champions_league": "Champions League", "europa_league": "UEFA League",
+                    "mls": "MLS", "isr_1": "Israeli Soccer", "fifa_world_cup": "FIFA World Cup",
+                    "euroleague": "EuroLeague", "eurocup": "EuroCup",
+                    "israeli_basketball": "Israeli Basketball", "israeli_soccer": "Israeli Soccer"}
+    cards = ""
     for m in matches:
         is_wc = m.get("is_world_cup") or m.get("league_id") == "fifa_world_cup"
-        emoji = "🏆" if is_wc else sport_emoji.get(m["sport"], "🏟️")
         gcal = _gcal_url(m, today)
-        gcal_html = (
-            f'<div style="margin-top:5px;">'
-            f'<a href="{gcal}" style="font-size:11px; color:#1a56db; text-decoration:none;">📅 Add to Calendar</a>'
-            f'</div>'
-        ) if gcal and m["time"] != "TBD" else ""
-        # Playoff series info line (NBA) — daily email shows only playoff_note
-        # (e.g. "East Finals - Game 1"), not series_summary ("Series starts X/X")
-        playoff_html = ""
-        p_note  = m.get("playoff_note", "")
-        if p_note:
-            playoff_html = f'<div style="font-size:11px; color:#9333ea; margin-top:2px; font-style:italic;">{p_note}</div>'
-        # Tournament round info (World Cup, UCL, Europa)
-        tournament_html = ""
+        gcal_html = ""
+        if gcal and m["time"] != "TBD":
+            gcal_html = (
+                f'<div style="margin-top:3px">'
+                f'<a href="{gcal}" style="font-size:11px;color:#f59e0b;text-decoration:none;'
+                f'font-weight:500;letter-spacing:0.3px">Add to calendar</a></div>'
+            )
+        # Playoff series info line (NBA)
+        p_note = m.get("playoff_note", "")
+        # Tournament info (WC group stage etc)
         t_note = m.get("tournament_note", "")
-        # Knockout stage badge
-        knockout_html = ""
+        # Knockout stage
         ko_stage = m.get("knockout_stage", "")
-        if ko_stage:
-            knockout_html = f'<div style="font-size:11px; color:#6b7280; margin-top:2px;">\U0001F3C6 {ko_stage}</div>'
-        if t_note:
-            tournament_html = f'<div style="font-size:11px; color:#b45309; margin-top:2px; font-style:italic;">{t_note}</div>'
-        # Time display — TBD gets a muted style; "If Necessary" gets extra note
         is_if_necessary = "if necessary" in p_note.lower()
-        # Show date label next to time when game falls on a different day
+        # Date label (4-branch cross-midnight logic)
         game_il_date = m.get("il_date", today)
         game_display_date = m.get("display_date", game_il_date)
+        date_label_html = ""
         if m["time"] == "00:00" and game_display_date != game_il_date:
             _dd_dt = datetime.datetime.strptime(game_display_date, "%Y-%m-%d")
             _il_dt = datetime.datetime.strptime(game_il_date, "%Y-%m-%d")
-            date_prefix = f'<div style="font-size:11px; color:#6b7280; margin-bottom:1px;">{_dd_dt.strftime("%a")}-{_il_dt.strftime("%a")} night</div>'
+            date_label_html = f'<div style="font-size:10px;color:#94a3b8;margin-bottom:1px">{_dd_dt.strftime("%a")}-{_il_dt.strftime("%a")} night</div>'
         elif game_display_date != today and m["time"] != "TBD":
             _label_date = game_il_date if game_il_date != game_display_date else game_display_date
             _g_dt = datetime.datetime.strptime(_label_date, "%Y-%m-%d")
             _g_day_name = _g_dt.strftime("%a")
             _g_date_str = f"{_g_day_name} {_g_dt.day}/{_g_dt.month}"
-            date_prefix = f'<div style="font-size:11px; color:#6b7280; margin-bottom:1px;">{_g_date_str}</div>'
-        elif game_il_date != game_display_date and m["time"] != "TBD":
-            # Game is tonight but crosses midnight (e.g. Panama 02:00 = early morning of il_date)
+            date_label_html = f'<div style="font-size:10px;color:#94a3b8;margin-bottom:1px">{_g_date_str}</div>'
+        elif game_display_date == today and game_il_date != game_display_date and m["time"] != "TBD":
             _g_dt = datetime.datetime.strptime(game_il_date, "%Y-%m-%d")
             _g_day_name = _g_dt.strftime("%a")
             _g_date_str = f"{_g_day_name} {_g_dt.day}/{_g_dt.month}"
-            date_prefix = f'<div style="font-size:11px; color:#6b7280; margin-bottom:1px;">{_g_date_str}</div>'
-        else:
-            date_prefix = ""
+            date_label_html = f'<div style="font-size:10px;color:#94a3b8;margin-bottom:1px">{_g_date_str}</div>'
+        # Time display
         if m["time"] == "TBD":
-            time_html = '<span style="font-weight:600; color:#9ca3af;">TBD</span>'
-            time_sub  = ('<div style="font-size:10px; color:#d97706;">if necessary</div>'
-                         if is_if_necessary else "")
+            time_html = '<div style="font-size:15px;font-weight:700;color:#94a3b8">TBD</div>'
         else:
-            time_html = f'{date_prefix}<span style="font-weight:600; color:#1a56db;">{m["time"]}</span>'
-            time_sub  = '<div style="font-size:12px; color:#999;">Israel time</div>'
-
-        # Build team names — World Cup uses "Vs" with flags; others use "@"
+            time_html = f'<div style="font-size:15px;font-weight:700;color:#0f172a">{m["time"]}</div>'
+        if is_if_necessary:
+            time_html += '<div style="font-size:10px;color:#94a3b8;font-style:italic">if necessary</div>'
+        time_cell = date_label_html + time_html + gcal_html
+        # Team names
         if is_wc:
             home_flag = _country_flag_emoji(m.get("home_abbr", ""))
             away_flag = _country_flag_emoji(m.get("away_abbr", ""))
             home_display = f"{home_flag} {m['home']}" if home_flag else m["home"]
             away_display = f"{away_flag} {m['away']}" if away_flag else m["away"]
-            # Star marker for tracked teams
             tracked = m.get("tracked_team", "")
             if tracked:
                 if names_match(m["home"], tracked):
                     home_display = home_display
                 elif names_match(m["away"], tracked):
                     away_display = away_display
-            matchup_html = (f'{home_display}<br>'
-                           f'<span style="font-size:13px; color:#888;">Vs</span><br>'
-                           f'{away_display}')
+            matchup_html = f"{home_display} — {away_display}"
         else:
             matchup_html = f'{m["away"]} @ {m["home"]}'
-        rows += f"""
-        <tr>
-          <td style="padding:12px 16px; font-size:16px; border-bottom:1px solid #f0f0f0; vertical-align:top;">
-            {emoji}
-          </td>
-          <td style="padding:12px 16px; border-bottom:1px solid #f0f0f0;">
-            <div style="font-weight:600; color:#111;">{matchup_html}</div>
-            <div style="font-size:13px; color:#666; margin-top:2px;">{m['league_name']}</div>
-            {playoff_html}
-            {tournament_html}
-            {knockout_html}
-            {gcal_html}
-          </td>
-          <td style="padding:12px 16px; border-bottom:1px solid #f0f0f0; text-align:right;">
-            {time_html}
-            {time_sub}
-          </td>
-        </tr>"""
-
-    # Build player stats HTML block
+        # Metadata line (league + stage info)
+        lid = m.get("league_id", "")
+        league_display = league_names.get(lid, lid.replace("_", " ").title() if lid else "")
+        meta_parts = []
+        if league_display:
+            meta_parts.append(league_display)
+        if p_note:
+            meta_parts.append(p_note)
+        if t_note:
+            meta_parts.append(t_note)
+        if ko_stage:
+            meta_parts.append(f"\U0001f3c6 {ko_stage}")
+        meta_line = " &middot; ".join(meta_parts) if meta_parts else ""
+        # Build card
+        cards += (
+            '<div style="background:#f8fafc;border-radius:10px;padding:14px 16px;margin-bottom:10px">'
+            '<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
+            '<td style="vertical-align:top">'
+            f'<div style="font-size:15px;font-weight:600;color:#0f172a">{matchup_html}</div>'
+            f'<div style="font-size:12px;color:#64748b;margin-top:3px">{meta_line}</div>'
+            '</td>'
+            '<td style="vertical-align:top;text-align:right;white-space:nowrap;padding-left:12px">'
+            f'{time_cell}'
+            '</td>'
+            '</tr></table></div>\n'
+        )
+    # Player stats block (keep blue card style)
     player_stats_html = ""
-    for ps in (player_stats or []):
-        if ps.get("dnp"):
-            player_stats_html += f"""
-        <div style="margin:16px 0 0; padding:12px 16px; background:#f8fafc;
-                    border-radius:8px; border-left:3px solid #94a3b8;">
-          <div style="font-size:13px; font-weight:600; color:#64748b;">
-            🏀 {ps['player_name']} | {ps['away']} @ {ps['home']} ({ps['game_date_il']})
-          </div>
-          <div style="font-size:14px; color:#64748b; margin-top:4px;">Did Not Play (DNP)</div>
-        </div>"""
-        else:
-            result_color = "#16a34a" if ps["won"] else "#dc2626"
-            result_text  = "Win" if ps["won"] else "Loss"
-            pm_val       = ps.get("plus_minus", "?")
-            try:
-                pm_int = int(pm_val)
-                pm_color = "#16a34a" if pm_int > 0 else ("#dc2626" if pm_int < 0 else "#64748b")
-                pm_display = f"+{pm_int}" if pm_int > 0 else str(pm_int)
-            except (ValueError, TypeError):
-                pm_color   = "#64748b"
-                pm_display = pm_val
-            player_stats_html += f"""
-        <div style="margin:16px 0 0; padding:12px 16px; background:#eff6ff;
-                    border-radius:8px; border-left:3px solid #1a56db;">
-          <div style="font-size:13px; font-weight:600; color:#1a56db; margin-bottom:8px;">
-            🏀 {ps['player_name']} | {ps['away']} {ps['away_score']}–{ps['home_score']} {ps['home']}
-            &nbsp;<span style="color:{result_color}; font-weight:700;">{result_text}</span>
-            <span style="font-weight:400; color:#64748b;"> ({ps['game_date_il']})</span>
-          </div>
-          <table style="width:100%; border-collapse:collapse; margin-bottom:8px;">
-            <tr>
-              <td style="text-align:center; padding:4px 6px; border-right:1px solid #bfdbfe;">
-                <div style="font-size:19px; font-weight:700; color:#64748b;">{ps['min']}</div>
-                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; margin-top:2px;">MIN</div>
-              </td>
-              <td style="text-align:center; padding:4px 6px; border-right:1px solid #bfdbfe;">
-                <div style="font-size:19px; font-weight:700; color:#1a56db;">{ps['pts']}</div>
-                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; margin-top:2px;">PTS</div>
-              </td>
-              <td style="text-align:center; padding:4px 6px; border-right:1px solid #bfdbfe;">
-                <div style="font-size:19px; font-weight:700; color:#111;">{ps['reb']}</div>
-                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; margin-top:2px;">REB</div>
-              </td>
-              <td style="text-align:center; padding:4px 6px; border-right:1px solid #bfdbfe;">
-                <div style="font-size:19px; font-weight:700; color:#111;">{ps['ast']}</div>
-                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; margin-top:2px;">AST</div>
-              </td>
-              <td style="text-align:center; padding:4px 6px;">
-                <div style="font-size:19px; font-weight:700; color:{pm_color};">{pm_display}</div>
-                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; margin-top:2px;">+/-</div>
-              </td>
-            </tr>
-          </table>
-          <div style="font-size:12px; color:#64748b; border-top:1px solid #bfdbfe; padding-top:6px;">
-            FG {ps['fg'].replace('-','/')} &nbsp;·&nbsp; 3PT {ps['three_pt'].replace('-','/')} &nbsp;·&nbsp; FT {ps['ft'].replace('-','/')}
-            &nbsp;·&nbsp; {ps['stl']} STL &nbsp;·&nbsp; {ps['blk']} BLK
-            &nbsp;·&nbsp; {ps['to']} TO &nbsp;·&nbsp; {ps['pf']} PF
-          </div>
-        </div>"""
-
+    if player_stats:
+        for ps in player_stats:
+            if ps.get("dnp"):
+                player_stats_html += (
+                    '<div style="margin:16px 0 0;padding:12px 16px;background:#1e293b;'
+                    'border-radius:8px;border-left:3px solid #94a3b8">'
+                    '<div style="font-size:13px;font-weight:600;color:#94a3b8">'
+                    f'\U0001f3c0 {ps["player_name"]} | {ps["away"]} @ {ps["home"]} ({ps["game_date_il"]})'
+                    '</div>'
+                    '<div style="font-size:14px;color:#94a3b8;margin-top:4px">Did Not Play (DNP)</div>'
+                    '</div>'
+                )
+            else:
+                result_color = "#16a34a" if ps["won"] else "#dc2626"
+                result_text = "Win" if ps["won"] else "Loss"
+                pm_val = ps.get("plus_minus", "?")
+                try:
+                    pm_int = int(pm_val)
+                    pm_color = "#16a34a" if pm_int > 0 else ("#dc2626" if pm_int < 0 else "#64748b")
+                    pm_display = f"+{pm_int}" if pm_int > 0 else str(pm_int)
+                except (ValueError, TypeError):
+                    pm_color = "#64748b"
+                    pm_display = pm_val
+                player_stats_html += (
+                    '<div style="margin:16px 0 0;padding:12px 16px;background:#1e293b;'
+                    'border-radius:8px;border-left:3px solid #3b82f6">'
+                    '<div style="font-size:13px;font-weight:600;color:#93c5fd">'
+                    f'\U0001f3c0 {ps["player_name"]} | {ps["away"]} @ {ps["home"]} ({ps["game_date_il"]})'
+                    '</div>'
+                    '<div style="font-size:12px;margin-top:4px">'
+                    f'<span style="font-weight:600;color:{result_color}">{result_text}</span>'
+                    f' &middot; <span style="color:#cbd5e1">{ps["score"]}</span>'
+                    f' &middot; <span style="font-weight:600;color:#cbd5e1">{ps["min"]} MIN</span>'
+                    '</div>'
+                    '<table cellpadding="0" cellspacing="0" border="0" '
+                    'style="margin-top:8px;background:#0f172a;border-radius:6px;border:1px solid #334155;'
+                    'width:100%"><tr>'
+                    '<td style="text-align:center;padding:4px 6px;border-right:1px solid #334155">'
+                    f'<div style="font-size:19px;font-weight:700;color:white">{ps["pts"]}</div>'
+                    '<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;margin-top:2px">PTS</div>'
+                    '</td>'
+                    '<td style="text-align:center;padding:4px 6px;border-right:1px solid #334155">'
+                    f'<div style="font-size:19px;font-weight:700;color:white">{ps["reb"]}</div>'
+                    '<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;margin-top:2px">REB</div>'
+                    '</td>'
+                    '<td style="text-align:center;padding:4px 6px;border-right:1px solid #334155">'
+                    f'<div style="font-size:19px;font-weight:700;color:white">{ps["ast"]}</div>'
+                    '<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;margin-top:2px">AST</div>'
+                    '</td>'
+                    '<td style="text-align:center;padding:4px 6px">'
+                    f'<div style="font-size:19px;font-weight:700;color:{pm_color}">{pm_display}</div>'
+                    '<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;margin-top:2px">+/-</div>'
+                    '</td>'
+                    '</tr></table>'
+                    '<div style="font-size:12px;color:#94a3b8;border-top:1px solid #334155;padding-top:6px">'
+                    f'FG {ps["fg"].replace("-", "/")} &nbsp;&middot;&nbsp; 3PT {ps["three_pt"].replace("-", "/")} &nbsp;&middot;&nbsp; FT {ps["ft"].replace("-", "/")}'
+                    f' &nbsp;&middot;&nbsp; {ps["stl"]} STL &nbsp;&middot;&nbsp; {ps["blk"]} BLK'
+                    f' &nbsp;&middot;&nbsp; {ps["to"]} TO &nbsp;&middot;&nbsp; {ps["pf"]} PF'
+                    '</div></div>'
+                )
+    # Final HTML assembly
     _dt = datetime.datetime.strptime(today, "%Y-%m-%d")
-    date_formatted = _dt.strftime("%A, %B ") + str(_dt.day)
-    return f"""
-    <html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-                       background:#f8fafc; margin:0; padding:20px;">
-      <div style="max-width:520px; margin:0 auto; background:white; border-radius:16px;
-                  overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08);">
-        <div style="background:#0f172a; padding:20px 24px;">
-          <div style="font-size:40px; margin-bottom:4px; line-height:1;">🏟️</div>
-          <h1 style="color:white; margin:0; font-size:18px; font-weight:700;">
-            Sports Reminder
-          </h1>
-          <p style="color:#94a3b8; margin:4px 0 0; font-size:13px;">{date_formatted}</p>
-        </div>
-        <div style="padding:16px 24px 8px;">
-          {''.join([
-            f'<p style="color:#374151; margin:0 0 16px; font-size:14px;">You have <strong>{len(matches)} {"match" if len(matches)==1 else "matches"}</strong> ahead:</p>',
-            f'<table style="width:100%; border-collapse:collapse;">{rows}</table>'
-          ]) if matches else ''}
-          {player_stats_html}
-        </div>
-        <div style="margin:12px 16px 0;background:#25D366;border-radius:8px;padding:10px 16px;text-align:center;">
-          <a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:white;text-decoration:none;font-size:13px;font-weight:600;">📱 Get updates on WhatsApp</a>
-        </div>
-        <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb; text-align:center;">
-          <a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=daily"
-             style="font-size:12px; color:#3b82f6; text-decoration:underline;">
-            ✏️ Edit your teams here
-          </a>
-          <div style="margin-top:8px;font-size:12px;color:#999;">
-            <a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
-          </div>
-        </div>
-      </div>
-    </body></html>
-    """
+    date_formatted = _dt.strftime("%b ") + str(_dt.day)
+    match_count = len(matches)
+    match_word = "match" if match_count == 1 else "matches"
+    matches_html = cards if matches else ""
+    return f'''<html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;margin:0;padding:20px">
+<div style="max-width:520px;margin:0 auto">
+<div style="padding:24px 24px 16px">
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td><div style="font-size:15px;font-weight:700;color:white;letter-spacing:0.5px">SPORTS REMINDER</div>
+<div style="font-size:13px;color:#94a3b8;margin-top:4px">Your matches &mdash; {date_formatted} &middot; Israel time</div></td>
+<td style="text-align:right;vertical-align:top"><div style="font-size:13px;font-weight:600;color:#f59e0b">{match_count} {match_word}</div></td>
+</tr></table>
+</div>
+<div style="padding:0 16px 16px">
+{matches_html}{player_stats_html}
+</div>
+<div style="margin:0 16px 12px;background:#1e293b;border-radius:10px;padding:12px 16px;text-align:center">
+<a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="text-decoration:none"><span style="color:#22c55e;font-size:13px;font-weight:600">Get live updates on WhatsApp</span> <span style="color:#94a3b8;font-size:13px">&rarr;</span></a>
+</div>
+<div style="padding:12px 24px">
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="text-align:left"><a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=daily" style="font-size:12px;color:#3b82f6;text-decoration:none">Edit your teams</a></td>
+<td style="text-align:right"><a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=unsubscribe" style="font-size:10px;color:#475569;text-decoration:none">Manage preferences</a></td>
+</tr></table>
+</div>
+</div>
+</body></html>'''
+
+
 
 def send_email(to: str, matches: list[dict], today: str, player_stats: list[dict] | None = None):
     _dt2 = datetime.datetime.strptime(today, "%Y-%m-%d")
