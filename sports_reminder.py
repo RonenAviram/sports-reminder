@@ -550,7 +550,7 @@ _KNOCKOUT_STAGE_NAMES = {
 _KNOCKOUT_LEAGUE_NAMES = {
     "fifa_world_cup": "FIFA World Cup",
     "champions_league": "Champions League",
-    "europa_league": "Europa League",
+    "europa_league": "UEFA Europa League",
     "nba": "NBA",
     "euroleague": "EuroLeague",
     "eurocup": "EuroCup",
