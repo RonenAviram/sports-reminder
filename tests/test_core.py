@@ -553,3 +553,152 @@ class TestRegressionGuards:
         label, is_mid = _label_decision("20:00", "2026-06-22", "2026-06-22", "2026-06-22")
         assert is_mid is False
         assert label is None
+
+
+# ===========================================================================
+# 12. Knockout detection -- is_knockout_game / get_knockout_stage_name
+# ===========================================================================
+
+class TestIsKnockoutGame:
+    """Verify knockout detection across all 6 supported tournaments."""
+
+    # --- ESPN-based tournaments (WC, UCL, Europa) ---
+
+    def test_wc_group_stage_not_knockout(self):
+        assert sr.is_knockout_game({"league_id": "fifa_world_cup", "season_slug": "group-stage"}) is False
+
+    def test_wc_league_phase_not_knockout(self):
+        assert sr.is_knockout_game({"league_id": "champions_league", "season_slug": "league-phase"}) is False
+
+    def test_wc_round_of_16_is_knockout(self):
+        assert sr.is_knockout_game({"league_id": "fifa_world_cup", "season_slug": "round-of-16"}) is True
+
+    def test_wc_quarterfinals_is_knockout(self):
+        assert sr.is_knockout_game({"league_id": "fifa_world_cup", "season_slug": "quarterfinals"}) is True
+
+    def test_wc_semifinals_is_knockout(self):
+        assert sr.is_knockout_game({"league_id": "fifa_world_cup", "season_slug": "semifinals"}) is True
+
+    def test_wc_final_is_knockout(self):
+        assert sr.is_knockout_game({"league_id": "fifa_world_cup", "season_slug": "final"}) is True
+
+    def test_ucl_knockout_playoffs(self):
+        assert sr.is_knockout_game({"league_id": "champions_league", "season_slug": "knockout-round-playoffs"}) is True
+
+    def test_europa_round_of_32(self):
+        assert sr.is_knockout_game({"league_id": "europa_league", "season_slug": "round-of-32"}) is True
+
+    def test_espn_empty_slug_not_knockout(self):
+        assert sr.is_knockout_game({"league_id": "fifa_world_cup", "season_slug": ""}) is False
+    # --- NBA ---
+
+    def test_nba_finals_is_knockout(self):
+        assert sr.is_knockout_game({"league_id": "nba", "playoff_note": "NBA Finals - Game 3"}) is True
+
+    def test_nba_conf_finals_is_knockout(self):
+        assert sr.is_knockout_game({"league_id": "nba", "playoff_note": "Eastern Conference Finals - Game 2"}) is True
+
+    def test_nba_regular_not_knockout(self):
+        assert sr.is_knockout_game({"league_id": "nba", "playoff_note": ""}) is False
+
+    def test_nba_no_playoff_note(self):
+        assert sr.is_knockout_game({"league_id": "nba"}) is False
+
+    # --- EuroLeague ---
+
+    def test_euroleague_ff_is_knockout(self):
+        assert sr.is_knockout_game({"league_id": "euroleague", "el_round": "FF"}) is True
+
+    def test_euroleague_regular_not_knockout(self):
+        assert sr.is_knockout_game({"league_id": "euroleague", "el_round": "28"}) is False
+
+    # --- EuroCup ---
+
+    def test_eurocup_8f_is_knockout(self):
+        assert sr.is_knockout_game({"league_id": "eurocup", "el_round": "8F"}) is True
+
+    def test_eurocup_4f_is_knockout(self):
+        assert sr.is_knockout_game({"league_id": "eurocup", "el_round": "4F"}) is True
+
+    def test_eurocup_final_is_knockout(self):
+        assert sr.is_knockout_game({"league_id": "eurocup", "el_round": "Final"}) is True
+
+    def test_eurocup_regular_not_knockout(self):
+        assert sr.is_knockout_game({"league_id": "eurocup", "el_round": "12"}) is False
+
+    # --- Non-tournament leagues ---
+
+    def test_premier_league_not_knockout(self):
+        assert sr.is_knockout_game({"league_id": "premier_league"}) is False
+
+    def test_la_liga_not_knockout(self):
+        assert sr.is_knockout_game({"league_id": "la_liga"}) is False
+
+
+class TestGetKnockoutStageName:
+    """Verify human-readable stage names for knockout games."""
+
+    # --- ESPN ---
+
+    def test_wc_round_of_16(self):
+        assert sr.get_knockout_stage_name({"league_id": "fifa_world_cup", "season_slug": "round-of-16"}) == "Round of 16"
+
+    def test_wc_quarterfinals(self):
+        assert sr.get_knockout_stage_name({"league_id": "fifa_world_cup", "season_slug": "quarterfinals"}) == "Quarter-final"
+
+    def test_wc_semifinals(self):
+        assert sr.get_knockout_stage_name({"league_id": "fifa_world_cup", "season_slug": "semifinals"}) == "Semi-final"
+
+    def test_wc_final(self):
+        assert sr.get_knockout_stage_name({"league_id": "fifa_world_cup", "season_slug": "final"}) == "Final"
+
+    def test_wc_3rd_place(self):
+        assert sr.get_knockout_stage_name({"league_id": "fifa_world_cup", "season_slug": "3rd-place-match"}) == "3rd place"
+
+    def test_ucl_knockout_playoffs(self):
+        assert sr.get_knockout_stage_name({"league_id": "champions_league", "season_slug": "knockout-round-playoffs"}) == "Knockout playoffs"
+
+    def test_unknown_slug_fallback(self):
+        """Unknown ESPN slug gets title-cased."""
+        result = sr.get_knockout_stage_name({"league_id": "europa_league", "season_slug": "some-new-round"})
+        assert result == "Some New Round"
+
+    # --- NBA ---
+
+    def test_nba_finals_game(self):
+        result = sr.get_knockout_stage_name({"league_id": "nba", "playoff_note": "NBA Finals - Game 4"})
+        assert "Final" in result
+        assert "Game 4" in result
+
+    def test_nba_conf_finals(self):
+        result = sr.get_knockout_stage_name({"league_id": "nba", "playoff_note": "Eastern Conference Finals - Game 1"})
+        assert "Eastern" in result
+        assert "Final" in result
+
+    # --- EuroLeague ---
+
+    def test_euroleague_semifinal(self):
+        result = sr.get_knockout_stage_name({"league_id": "euroleague", "el_round": "FF", "el_group": "Semifinal 1"})
+        assert result == "Semi-final"
+
+    def test_euroleague_championship(self):
+        result = sr.get_knockout_stage_name({"league_id": "euroleague", "el_round": "FF", "el_group": "Championship Game"})
+        assert result == "Final"
+
+    def test_euroleague_ff_generic(self):
+        result = sr.get_knockout_stage_name({"league_id": "euroleague", "el_round": "FF", "el_group": ""})
+        assert result == "Final Four"
+
+    # --- EuroCup ---
+
+    def test_eurocup_round_of_16(self):
+        assert sr.get_knockout_stage_name({"league_id": "eurocup", "el_round": "8F"}) == "Round of 16"
+
+    def test_eurocup_quarterfinal(self):
+        assert sr.get_knockout_stage_name({"league_id": "eurocup", "el_round": "4F"}) == "Quarter-final"
+
+    def test_eurocup_semifinal(self):
+        assert sr.get_knockout_stage_name({"league_id": "eurocup", "el_round": "2F"}) == "Semi-final"
+
+    def test_eurocup_final(self):
+        assert sr.get_knockout_stage_name({"league_id": "eurocup", "el_round": "Final"}) == "Final"
