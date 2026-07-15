@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-player_stats.py â Multi-player NBA stats email system.
+player_stats.py — Multi-player NBA stats email system.
 
 Fetches last-game stats for tracked players from ESPN,
 partitions them into up to 3 email buckets (dedicated Avdija,
@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 from email_sender import send_raw_email
 from email.header import Header
 
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# ─────────────────────────────────────────────────────────────────────────────
 # CONSTANTS
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# ─────────────────────────────────────────────────────────────────────────────
 
 FIREBASE_PROJECT = "sports-reminder-55578"
 FIREBASE_API_KEY = "AIzaSyCd3C1_XN69r8lWUBYPndoGFxmDjnsjX1E"
@@ -42,7 +42,7 @@ def _get_db_ps():
 # ESPN Player IDs for all tracked players
 # Keys = ESPN ID (string), values used only for initial Firestore population
 DEFAULT_PLAYERS = {
-    # ââ MVP Tier (auto-enabled) ââââââââââââââââââââââââââââââââââ
+    # ── MVP Tier (auto-enabled) ──────────────────────────────────
     "4278073": {"name": "Shai Gilgeous-Alexander", "tags": [], "tier": "mvp"},
     "3112335": {"name": "Nikola Jokic",            "tags": [], "tier": "mvp"},
     "3945274": {"name": "Luka Doncic",             "tags": [], "tier": "mvp"},
@@ -55,7 +55,7 @@ DEFAULT_PLAYERS = {
     "4065648": {"name": "Jayson Tatum",            "tags": [], "tier": "mvp"},
     "3059318": {"name": "Joel Embiid",             "tags": [], "tier": "mvp"},
     "3908809": {"name": "Donovan Mitchell",        "tags": [], "tier": "mvp"},
-    # ââ All-Star Tier (disabled by default) ââââââââââââââââââââââ
+    # ── All-Star Tier (disabled by default) ──────────────────────
     "3917376": {"name": "Jaylen Brown",            "tags": [], "tier": "allstar"},
     "4432158": {"name": "Evan Mobley",             "tags": [], "tier": "allstar"},
     "4396993": {"name": "Tyrese Haliburton",       "tags": [], "tier": "allstar"},
@@ -80,7 +80,7 @@ DEFAULT_PLAYERS = {
     "4066259": {"name": "De'Aaron Fox",            "tags": [], "tier": "allstar"},
     "3155942": {"name": "Domantas Sabonis",        "tags": [], "tier": "allstar"},
     "4277905": {"name": "Trae Young",              "tags": [], "tier": "allstar"},
-    # ââ User-Selected Tier (disabled by default) âââââââââââââââââ
+    # ── User-Selected Tier (disabled by default) ─────────────────
     "4432816": {"name": "LaMelo Ball",             "tags": [], "tier": "user"},
     "3064440": {"name": "Zach LaVine",             "tags": [], "tier": "user"},
     "4432166": {"name": "Cade Cunningham",         "tags": [], "tier": "user"},
@@ -89,21 +89,21 @@ DEFAULT_PLAYERS = {
     "4871144": {"name": "Alperen Sengun",          "tags": [], "tier": "user"},
     "3992":    {"name": "James Harden",            "tags": [], "tier": "user"},
     "4066336": {"name": "Lauri Markkanen",         "tags": [], "tier": "user"},
-    # ââ Israeli Players (enabled by default) âââââââââââââââââââââ
+    # ── Israeli Players (enabled by default) ─────────────────────
     "4683021": {"name": "Deni Avdija",    "tags": ["israeli"], "tier": "israeli"},
     "5242502": {"name": "Ben Saraf",      "tags": ["israeli"], "tier": "israeli"},
     "5107173": {"name": "Danny Wolf",     "tags": ["israeli"], "tier": "israeli"},
     "5106058": {"name": "Emanuel Sharp",  "tags": ["israeli"], "tier": "israeli"},
 }
 
-# Avdija ESPN ID â used for dedicated email routing
+# Avdija ESPN ID — used for dedicated email routing
 AVDIJA_ESPN_ID = "4683021"
 
 
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# ─────────────────────────────────────────────────────────────────────────────
 # HELPERS (imported from sports_reminder at runtime, but defined here for
 #          standalone testing)
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _fetch_json(url: str) -> dict:
     """Fetch JSON from a URL with ESPN-compatible headers."""
@@ -139,9 +139,9 @@ def _israel_utc_offset_h(at_utc: datetime.datetime) -> int:
     return 3 if dst_start <= at_utc < dst_end else 2
 
 
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-# DATA LOADING â Firestore
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# ─────────────────────────────────────────────────────────────────────────────
+# DATA LOADING — Firestore
+# ─────────────────────────────────────────────────────────────────────────────
 
 def load_tracked_players(doc_id: str) -> dict:
     """
@@ -385,9 +385,9 @@ def fetch_all_player_stats(players: dict, yesterday_il: str,
     return results
 
 
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-# FIRESTORE SYNC â auto-update team names
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# ─────────────────────────────────────────────────────────────────────────────
+# FIRESTORE SYNC — auto-update team names
+# ─────────────────────────────────────────────────────────────────────────────
 
 def update_player_teams(doc_id: str, results: list[dict], players: dict) -> None:
     """
@@ -479,9 +479,9 @@ def partition_players_to_emails(stats: list[dict], toggles: dict,
     return {"dedicated": dedicated, "israeli": israeli, "general": general}
 
 
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-# EMAIL BUILDING â subject lines
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# ─────────────────────────────────────────────────────────────────────────────
+# EMAIL BUILDING — subject lines
+# ─────────────────────────────────────────────────────────────────────────────
 
 def format_subject_line(players_in_email: list[dict], email_type: str) -> str:
     """
@@ -492,33 +492,33 @@ def format_subject_line(players_in_email: list[dict], email_type: str) -> str:
     dnp_only = len(played) == 0
 
     if email_type == "israeli":
-        prefix = "ð®ð±"
+        prefix = "🇮🇱"
     else:
-        prefix = "ð"
+        prefix = "🏀"
 
     if dnp_only:
         # Only DNP players
         if len(players_in_email) == 1:
             p = players_in_email[0]
-            return f"{prefix} {p['player_name']} â DNP â {p['game_date_il']}"
-        return f"{prefix} {len(players_in_email)} players â DNP â last night"
+            return f"{prefix} {p['player_name']} — DNP — {p['game_date_il']}"
+        return f"{prefix} {len(players_in_email)} players — DNP — last night"
 
     if len(played) == 1:
-        # Single player â personal format
+        # Single player — personal format
         p = played[0]
         result = "W" if p["won"] else "L"
-        return (f"{prefix} {p['player_name']} â {p['pts']} pts / {p['reb']} reb / "
-                f"{p['ast']} ast ({result}) â {p['game_date_il']}")
+        return (f"{prefix} {p['player_name']} — {p['pts']} pts / {p['reb']} reb / "
+                f"{p['ast']} ast ({result}) — {p['game_date_il']}")
 
     if len(played) <= 3:
-        # 2-3 players â compact personal
+        # 2-3 players — compact personal
         parts = []
         for p in played:
             first_name = p["player_name"].split()[-1]  # last name
             parts.append(f"{first_name}: {p['pts']}p/{p['reb']}r/{p['ast']}a")
-        return f"{prefix} " + " Â· ".join(parts) + " â last night"
+        return f"{prefix} " + " · ".join(parts) + " — last night"
 
-    # 4+ players â generic
+    # 4+ players — generic
     # Count unique games
     game_keys = set()
     for p in played:
@@ -526,13 +526,13 @@ def format_subject_line(players_in_email: list[dict], email_type: str) -> str:
     n_games = len(game_keys)
 
     if email_type == "israeli":
-        return f"{prefix} {len(played)} Israeli players â last night's stats"
-    return f"{prefix} {len(played)} players, {n_games} games â last night's stats"
+        return f"{prefix} {len(played)} Israeli players — last night's stats"
+    return f"{prefix} {len(played)} players, {n_games} games — last night's stats"
 
 
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-# EMAIL BUILDING â HTML body
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# ─────────────────────────────────────────────────────────────────────────────
+# EMAIL BUILDING — HTML body
+# ─────────────────────────────────────────────────────────────────────────────
 
 def build_player_stat_card_html(ps: dict) -> str:
     """Build HTML for a single player stat card — Stadium Lights dark theme."""
@@ -564,7 +564,7 @@ def build_player_stat_card_html(ps: dict) -> str:
                     border-radius:10px;">
           <div style="font-size:13px; font-weight:600; color:#e2e8f0; margin-bottom:10px;">
             {ps['player_name']}
-            <span style="color:#94a3b8; font-weight:400;"> \u00b7 {ps['away']} {ps['away_score']}\u2013{ps['home_score']} {ps['home']}</span>
+            <span style="color:#94a3b8; font-weight:400;"> · {ps['away']} {ps['away_score']}–{ps['home_score']} {ps['home']}</span>
             <span style="color:{result_color}; font-weight:700;"> {result_text}</span>
           </div>
           <table style="width:100%; border-collapse:collapse; margin-bottom:10px;">
@@ -592,11 +592,11 @@ def build_player_stat_card_html(ps: dict) -> str:
             </tr>
           </table>
           <div style="font-size:11px; color:#94a3b8; border-top:1px solid #334155; padding-top:8px;">
-            FG {ps['fg'].replace('-','/')} \u00b7 3PT {ps['three_pt'].replace('-','/')} \u00b7 FT {ps['ft'].replace('-','/')}
-            \u00b7 {ps['stl']} STL \u00b7 {ps['blk']} BLK
-            \u00b7 {ps['to']} TO \u00b7 {ps['pf']} PF
+            FG {ps['fg'].replace('-','/')} · 3PT {ps['three_pt'].replace('-','/')} · FT {ps['ft'].replace('-','/')}
+            · {ps['stl']} STL · {ps['blk']} BLK
+            · {ps['to']} TO · {ps['pf']} PF
           </div>
-        </div>\"""
+        </div>"""
 
 
 def build_player_stats_email_html(players: list[dict], email_type: str) -> str:
@@ -605,14 +605,15 @@ def build_player_stats_email_html(players: list[dict], email_type: str) -> str:
     Groups players by team when email_type == "general".
     """
     if email_type == "israeli":
-        header_subtitle = "Israeli Players \u2014 Last Night"
+        header_subtitle = "Israeli Players — Last Night"
     elif email_type == "dedicated":
+        # Dedicated = single player (Deni Avdija)
         if players and len(players) == 1:
-            header_subtitle = f"{players[0]['player_name']} \u2014 Last Night"
+            header_subtitle = f"{players[0]['player_name']} — Last Night"
         else:
-            header_subtitle = "Player Stats \u2014 Last Night"
+            header_subtitle = "Player Stats — Last Night"
     else:
-        header_subtitle = "NBA Stats \u2014 Last Night"
+        header_subtitle = "NBA Stats — Last Night"
 
     player_count = len(players)
     count_label = f"{player_count} player{'s' if player_count != 1 else ''}"
@@ -636,7 +637,7 @@ def build_player_stats_email_html(players: list[dict], email_type: str) -> str:
                           text-transform:uppercase; letter-spacing:0.06em;
                           padding:10px 16px 6px;">
                 {team_name}
-              </div>\"""
+              </div>"""
             for p in team_players:
                 cards_html += build_player_stat_card_html(p)
             cards_html += "</div>"
@@ -675,7 +676,7 @@ def build_player_stats_email_html(players: list[dict], email_type: str) -> str:
 
         <div style="margin:0 16px; padding:14px 16px; background:#1e293b; border-radius:10px; text-align:center;">
           <a href="{wa_url}" target="_blank"
-             style="color:#25D366; text-decoration:none; font-size:13px; font-weight:600;">Get live updates on WhatsApp \u2192</a>
+             style="color:#25D366; text-decoration:none; font-size:13px; font-weight:600;">Get live updates on WhatsApp &rarr;</a>
         </div>
 
         <table style="width:100%; border-collapse:collapse; margin-top:16px;">
@@ -691,12 +692,12 @@ def build_player_stats_email_html(players: list[dict], email_type: str) -> str:
 
       </div>
     </body></html>
-    \"""
+    """
 
 
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# ─────────────────────────────────────────────────────────────────────────────
 # EMAIL SENDING
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _send_one_email(to: str, subject: str, html: str, plain: str) -> bool:
     """Send a single email via send_raw_email()."""
@@ -708,7 +709,7 @@ def _build_plain_text(players: list[dict]) -> str:
     lines = []
     for ps in players:
         if ps.get("dnp"):
-            lines.append(f"ðª {ps['player_name']} â DNP ({ps['away']} @ {ps['home']}, {ps['game_date_il']})")
+            lines.append(f"🪑 {ps['player_name']} — DNP ({ps['away']} @ {ps['home']}, {ps['game_date_il']})")
         else:
             result = "W" if ps["won"] else "L"
             pm = ps.get("plus_minus", "0")
@@ -717,17 +718,17 @@ def _build_plain_text(players: list[dict]) -> str:
             except (ValueError, TypeError):
                 pass
             lines.append(
-                f"ð {ps['player_name']} | {ps['away']} {ps['away_score']}â{ps['home_score']} {ps['home']} ({result}, {ps['game_date_il']})\n"
-                f"   {ps['min']} min Â· {ps['pts']} pts Â· {ps['reb']} reb Â· {ps['ast']} ast Â· {pm}\n"
-                f"   FG {ps['fg'].replace('-','/')} Â· 3PT {ps['three_pt'].replace('-','/')} Â· FT {ps['ft'].replace('-','/')}"
-                f" Â· {ps['stl']} stl Â· {ps['blk']} blk Â· {ps['to']} to Â· {ps['pf']} pf"
+                f"🏀 {ps['player_name']} | {ps['away']} {ps['away_score']}–{ps['home_score']} {ps['home']} ({result}, {ps['game_date_il']})\n"
+                f"   {ps['min']} min · {ps['pts']} pts · {ps['reb']} reb · {ps['ast']} ast · {pm}\n"
+                f"   FG {ps['fg'].replace('-','/')} · 3PT {ps['three_pt'].replace('-','/')} · FT {ps['ft'].replace('-','/')}"
+                f" · {ps['stl']} stl · {ps['blk']} blk · {ps['to']} to · {ps['pf']} pf"
             )
     return "\n\n".join(lines) + "\n\nEdit players: https://app.sportsreminder.pro?utm_source=email&utm_medium=stats\nUnsubscribe: https://app.sportsreminder.pro?utm_source=email&utm_medium=unsubscribe"
 
 
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-# ORCHESTRATION â main entry point
-# âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+# ─────────────────────────────────────────────────────────────────────────────
+# ORCHESTRATION — main entry point
+# ─────────────────────────────────────────────────────────────────────────────
 
 def send_player_stats_emails(doc_id: str, to_email: str,
                               target_date: str, send: bool = True) -> None:
