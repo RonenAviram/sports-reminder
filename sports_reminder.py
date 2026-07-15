@@ -1261,9 +1261,9 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
                     home_display = home_display
                 elif names_match(m["away"], tracked):
                     away_display = away_display
-            matchup_html = f"{home_display} — {away_display}"
+            matchup_html = f'<span style="white-space:nowrap">{home_display}</span> — <span style="white-space:nowrap">{away_display}</span>'
         else:
-            matchup_html = f'{m["away"]} @ {m["home"]}'
+            matchup_html = f'<span style="white-space:nowrap">{m["away"]}</span> @ <span style="white-space:nowrap">{m["home"]}</span>'
         # Metadata line (league + stage info)
         lid = m.get("league_id", "")
         league_display = league_names.get(lid, lid.replace("_", " ").title() if lid else "")
