@@ -868,7 +868,7 @@ def find_week_matches(tracked: list[dict], start_date: str, world_cup_mode: bool
         if dd < start_date or dd > end_date:
             continue
         # Skip matches that already happened on the send day
-        if now_il_time and il_date == start_date:
+        if now_il_time and dd == start_date:
             match_time = match.get("time", "")
             if match_time and match_time < now_il_time:
                 continue
