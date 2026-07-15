@@ -1363,8 +1363,8 @@ def build_email_html(matches: list[dict], today: str, player_stats: list[dict] |
 <div style="padding:24px 24px 16px">
 <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
 <td><div style="font-size:15px;font-weight:700;color:white;letter-spacing:0.5px">SPORTS REMINDER</div>
-<div style="font-size:13px;color:#94a3b8;margin-top:4px">Your matches &mdash; {date_formatted} &middot; Israel time</div></td>
-<td style="text-align:right;vertical-align:top"><div style="font-size:13px;font-weight:600;color:#f59e0b">{match_count} {match_word}</div></td>
+<div style="font-size:13px;color:#94a3b8;margin-top:4px">Your matches &mdash; {date_formatted}</div></td>
+<td style="text-align:right;vertical-align:top"><div style="font-size:13px;font-weight:600;color:#f59e0b;white-space:nowrap">{match_count} {match_word}</div></td>
 </tr></table>
 </div>
 <div style="padding:0 16px 16px">
@@ -1574,8 +1574,8 @@ def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
 <div style="padding:24px 24px 16px">
 <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
 <td><div style="font-size:15px;font-weight:700;color:white;letter-spacing:0.5px">SPORTS REMINDER</div>
-<div style="font-size:13px;color:#94a3b8;margin-top:4px">Upcoming matches &mdash; {week_lbl} &middot; Israel time</div></td>
-<td style="text-align:right;vertical-align:top"><div style="font-size:13px;font-weight:600;color:#f59e0b">{total_matches} {match_word}</div></td>
+<div style="font-size:13px;color:#94a3b8;margin-top:4px">Upcoming matches &mdash; {week_lbl}</div></td>
+<td style="text-align:right;vertical-align:top"><div style="font-size:13px;font-weight:600;color:#f59e0b;white-space:nowrap">{total_matches} {match_word}</div></td>
 </tr></table>
 </div>
 <div style="padding:0 0 16px">
