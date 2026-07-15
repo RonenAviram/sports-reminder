@@ -1450,131 +1450,148 @@ def _week_label(start_date: str) -> str:
 
 
 def build_weekly_email_html(matches_by_day: dict, start_date: str) -> str:
-    week_lbl    = _week_label(start_date)
-    sport_emoji = {"soccer": "⚽", "basketball": "🏀"}
+    week_lbl = _week_label(start_date)
+    league_names = {
+        "eng.1": "Premier League", "esp.1": "La Liga", "ger.1": "Bundesliga",
+        "ita.1": "Serie A", "fra.1": "Ligue 1", "uefa.champions": "Champions League",
+        "uefa.europa": "UEFA League", "usa.1": "MLS", "isr.1": "Israeli Soccer",
+        "nba": "NBA", "euroleague": "EuroLeague", "eurocup": "EuroCup",
+        "isr_basketball": "Israeli Basketball", "fifa_world_cup": "FIFA World Cup",
+    }
+    total_matches = sum(len(v) for v in matches_by_day.values()) if matches_by_day else 0
 
     if not matches_by_day:
-        body_html = """
-        <div style="padding:32px 24px; text-align:center; color:#6b7280; font-size:14px;">
-          No matches this week for your teams. Enjoy the break! ⚽🏀
-        </div>"""
+        body_html = ('<div style="padding:32px 24px;text-align:center;'
+                     'color:#94a3b8;font-size:14px">'
+                     'No matches this week for your teams.</div>')
     else:
         days_html = ""
         for date_str, matches in matches_by_day.items():
-            dt        = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+            dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
             day_label = dt.strftime("%A, %b ") + str(dt.day)
-            rows      = ""
+            cards = ""
             for m in matches:
-                is_wc    = m.get("is_world_cup") or m.get("league_id") == "fifa_world_cup"
-                emoji    = "🏆" if is_wc else sport_emoji.get(m["sport"], "🏟️")
-                gcal     = _gcal_url(m, date_str)
-                gcal_html = (
-                    f'<div style="margin-top:4px;">'
-                    f'<a href="{gcal}" style="font-size:11px; color:#1a56db; text-decoration:none;">📅 Add to Calendar</a>'
-                    f'</div>'
-                ) if gcal and m["time"] != "TBD" else ""
-                # Playoff series info line (NBA)
-                playoff_html = ""
-                p_note  = m.get("playoff_note", "")
-                p_series = _format_series_summary(m.get("series_summary", ""), m.get("il_date", ""))
-                if p_note or p_series:
-                    parts = []
-                    if p_note:
-                        parts.append(p_note)
-                    if p_series:
-                        parts.append(p_series)
-                    _joined = " · ".join(parts)
-                    playoff_html = f'<div style="font-size:11px; color:#9333ea; margin-top:2px; font-style:italic;">{_joined}</div>'
-                # Tournament round info (World Cup)
-                tournament_html = ""
+                is_wc = m.get("is_world_cup") or m.get("league_id") == "fifa_world_cup"
+                gcal = _gcal_url(m, date_str)
+                gcal_html = ""
+                if gcal and m["time"] != "TBD":
+                    gcal_html = (
+                        f'<div style="margin-top:4px">'
+                        f'<a href="{gcal}" style="font-size:11px;color:#f59e0b;'
+                        f'text-decoration:none;font-weight:600">Add to calendar</a></div>')
+                p_note = m.get("playoff_note", "")
                 t_note = m.get("tournament_note", "")
-                if t_note:
-                    tournament_html = f'<div style="font-size:11px; color:#b45309; margin-top:2px; font-style:italic;">{t_note}</div>'
-                # Knockout badge
-                knockout_html = ""
                 ko_stage = m.get("knockout_stage", "")
-                if ko_stage:
-                    knockout_html = f'<div style="font-size:11px; color:#6b7280; margin-top:2px;">\U0001F3C6 {ko_stage}</div>'
-                # Time display — TBD gets a muted style; "If Necessary" gets extra note
                 is_if_necessary = "if necessary" in p_note.lower()
+                p_series = _format_series_summary(
+                    m.get("series_summary", ""), m.get("il_date", ""))
+                # Midnight label
+                _w_midnight = ""
+                if (m["time"] == "00:00" and m.get("display_date")
+                        and m.get("il_date")
+                        and m["display_date"] != m["il_date"]):
+                    _w_dd_dt = datetime.datetime.strptime(
+                        m["display_date"], "%Y-%m-%d")
+                    _w_il_dt = datetime.datetime.strptime(
+                        m["il_date"], "%Y-%m-%d")
+                    _w_midnight = (
+                        f'<div style="font-size:10px;color:#94a3b8;'
+                        f'margin-bottom:1px">'
+                        f'{_w_dd_dt.strftime("%a")}-'
+                        f'{_w_il_dt.strftime("%a")} night</div>')
+                # Time display
                 if m["time"] == "TBD":
-                    tbd_sub = ('<div style="font-size:10px; color:#d97706;">if nec.</div>'
-                               if is_if_necessary else "")
-                    time_html = f'<span style="font-weight:600; color:#9ca3af;">TBD</span>{tbd_sub}'
+                    time_html = ('<div style="font-size:15px;font-weight:700;'
+                                 'color:#94a3b8">TBD</div>')
+                    if is_if_necessary:
+                        time_html += ('<div style="font-size:10px;color:#94a3b8;'
+                                      'font-style:italic">if necessary</div>')
                 else:
-                    _w_midnight = ""
-                    if m["time"] == "00:00" and m.get("display_date") and m.get("il_date") and m["display_date"] != m["il_date"]:
-                        _w_dd_dt = datetime.datetime.strptime(m["display_date"], "%Y-%m-%d")
-                        _w_il_dt = datetime.datetime.strptime(m["il_date"], "%Y-%m-%d")
-                        _w_midnight = f'<div style="font-size:11px; color:#6b7280; margin-bottom:1px;">{_w_dd_dt.strftime("%a")}-{_w_il_dt.strftime("%a")} night</div>'
-                    time_html = f'{_w_midnight}<span style="font-weight:600; color:#1a56db;">{m["time"]}</span>'
-                # Build matchup text — World Cup uses "Vs" with flags
+                    time_html = (
+                        f'{_w_midnight}'
+                        f'<div style="font-size:15px;font-weight:700;'
+                        f'color:#0f172a">{m["time"]}</div>')
+                time_cell = time_html + gcal_html
+                # Matchup
                 if is_wc:
                     home_flag = _country_flag_emoji(m.get("home_abbr", ""))
                     away_flag = _country_flag_emoji(m.get("away_abbr", ""))
                     h_disp = f"{home_flag} {m['home']}" if home_flag else m["home"]
                     a_disp = f"{away_flag} {m['away']}" if away_flag else m["away"]
-                    tracked_t = m.get("tracked_team", "")
-                    if tracked_t:
-                        if names_match(m["home"], tracked_t):
-                            h_disp = h_disp
-                        elif names_match(m["away"], tracked_t):
-                            a_disp = a_disp
-                    matchup_str = (f'{h_disp}<br>'
-                                   f'<span style="font-size:12px; color:#888;">Vs</span><br>'
-                                   f'{a_disp}')
+                    matchup_html = (
+                        f'<span style="white-space:nowrap">{h_disp}</span>'
+                        f' &mdash; '
+                        f'<span style="white-space:nowrap">{a_disp}</span>')
                 else:
-                    matchup_str = f'{m["away"]} @ {m["home"]}'
-                rows += f"""
-                <tr>
-                  <td style="padding:10px 12px; font-size:15px; border-bottom:1px solid #f0f0f0; width:32px; vertical-align:top;">{emoji}</td>
-                  <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0;">
-                    <div style="font-weight:600; color:#111;">{matchup_str}</div>
-                    <div style="font-size:12px; color:#666; margin-top:2px;">{m['league_name']}</div>
-                    {playoff_html}
-                    {tournament_html}
-                    {knockout_html}
-                    {gcal_html}
-                  </td>
-                  <td style="padding:10px 12px; border-bottom:1px solid #f0f0f0; text-align:right; white-space:nowrap;">
-                    {time_html}
-                  </td>
-                </tr>"""
-            days_html += f"""
-            <div>
-              <div style="padding:8px 16px; font-size:11px; font-weight:700; color:#6b7280;
-                          text-transform:uppercase; letter-spacing:0.06em;
-                          background:#f8fafc; border-top:1px solid #e5e7eb;">{day_label}</div>
-              <table style="width:100%; border-collapse:collapse;">{rows}</table>
-            </div>"""
-        body_html = f'<div>{days_html}</div>'
+                    matchup_html = (
+                        f'<span style="white-space:nowrap">{m["away"]}</span>'
+                        f' @ '
+                        f'<span style="white-space:nowrap">{m["home"]}</span>')
+                # Meta line
+                lid = m.get("league_id", "")
+                league_display = league_names.get(
+                    lid, lid.replace("_", " ").title() if lid else "")
+                meta_parts = []
+                if league_display:
+                    meta_parts.append(league_display)
+                if p_note:
+                    meta_parts.append(p_note)
+                if p_series:
+                    meta_parts.append(p_series)
+                if t_note:
+                    meta_parts.append(t_note)
+                if ko_stage:
+                    meta_parts.append(f"\U0001f3c6 {ko_stage}")
+                meta_line = " &middot; ".join(meta_parts) if meta_parts else ""
+                # Card
+                cards += (
+                    '<div style="background:#f8fafc;border-radius:10px;'
+                    'padding:14px 16px;margin-bottom:10px">'
+                    '<table width="100%" cellpadding="0" cellspacing="0" '
+                    'border="0"><tr>'
+                    '<td style="vertical-align:top">'
+                    f'<div style="font-size:15px;font-weight:600;'
+                    f'color:#0f172a">{matchup_html}</div>'
+                    f'<div style="font-size:12px;color:#64748b;'
+                    f'margin-top:3px">{meta_line}</div>'
+                    '</td>'
+                    '<td style="vertical-align:top;text-align:right;'
+                    'white-space:nowrap;padding-left:12px">'
+                    f'{time_cell}'
+                    '</td>'
+                    '</tr></table></div>\n')
+            # Day section header on dark background
+            days_html += (
+                f'<div style="padding:8px 16px 4px;font-size:11px;'
+                f'font-weight:700;color:#94a3b8;text-transform:uppercase;'
+                f'letter-spacing:0.06em;margin-top:8px">{day_label}</div>\n'
+                f'<div style="padding:0 16px">{cards}</div>\n')
+        body_html = days_html
 
-    return f"""
-    <html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-                       background:#f8fafc; margin:0; padding:20px;">
-      <div style="max-width:520px; margin:0 auto; background:white; border-radius:16px;
-                  overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08);">
-        <div style="background:#0f172a; padding:20px 24px;">
-          <div style="font-size:40px; margin-bottom:4px; line-height:1;">🗓️</div>
-          <h1 style="color:white; margin:0; font-size:18px; font-weight:700;">Upcoming Matches</h1>
-          <p style="color:#94a3b8; margin:4px 0 0; font-size:13px;">{week_lbl} · Israel time</p>
-        </div>
-        {body_html}
-        <div style="margin:12px 16px 0;background:#25D366;border-radius:8px;padding:10px 16px;text-align:center;">
-          <a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="color:white;text-decoration:none;font-size:13px;font-weight:600;">📱 Get updates on WhatsApp</a>
-        </div>
-        <div style="padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb; text-align:center;">
-          <a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=weekly"
-             style="font-size:12px; color:#3b82f6; text-decoration:underline;">
-            ✏️ Edit your teams here
-          </a>
-          <div style="margin-top:8px;font-size:12px;color:#999;">
-            <a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=unsubscribe" style="color:#999;text-decoration:underline;">Manage preferences / Unsubscribe</a>
-          </div>
-        </div>
-      </div>
-    </body></html>
-    """
+    match_word = "match" if total_matches == 1 else "matches"
+    return f'''<html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;margin:0;padding:20px">
+<div style="max-width:520px;margin:0 auto">
+<div style="padding:24px 24px 16px">
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td><div style="font-size:15px;font-weight:700;color:white;letter-spacing:0.5px">SPORTS REMINDER</div>
+<div style="font-size:13px;color:#94a3b8;margin-top:4px">Upcoming matches &mdash; {week_lbl} &middot; Israel time</div></td>
+<td style="text-align:right;vertical-align:top"><div style="font-size:13px;font-weight:600;color:#f59e0b">{total_matches} {match_word}</div></td>
+</tr></table>
+</div>
+<div style="padding:0 0 16px">
+{body_html}
+</div>
+<div style="margin:0 16px 12px;background:#1e293b;border-radius:10px;padding:12px 16px;text-align:center">
+<a href="https://chat.whatsapp.com/CvTdxcgzCWBH2Pifds7odT" target="_blank" style="text-decoration:none"><span style="color:#22c55e;font-size:13px;font-weight:600">Get live updates on WhatsApp</span> <span style="color:#94a3b8;font-size:13px">&rarr;</span></a>
+</div>
+<div style="padding:12px 24px">
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="text-align:left"><a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=weekly" style="font-size:12px;color:#3b82f6;text-decoration:none">Edit your teams</a></td>
+<td style="text-align:right"><a href="https://app.sportsreminder.pro?utm_source=email&utm_medium=unsubscribe" style="font-size:10px;color:#475569;text-decoration:none">Manage preferences</a></td>
+</tr></table>
+</div>
+</div>
+</body></html>'''
 
 
 def send_weekly_email(to: str, matches_by_day: dict, start_date: str):
