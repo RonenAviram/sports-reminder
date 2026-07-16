@@ -48,7 +48,7 @@ def _build_welcome_html() -> str:
 <body style="margin:0; padding:0; background-color:#0f172a; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f172a;">
 <tr><td align="center" style="padding:32px 16px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; border:1px solid #1e293b; border-radius:10px;">
 
 <!-- Header -->
 <tr><td style="padding:20px 24px; text-align:center;">
