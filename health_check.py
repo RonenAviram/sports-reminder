@@ -30,16 +30,16 @@ ADMIN_EMAIL = "ronen6213@gmail.com"
 
 # ESPN endpoints to check (league_id → URL)
 ESPN_CHECKS = {
-    "nba":              "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
-    "premier_league":   "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
-    "la_liga":          "https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/scoreboard",
-    "bundesliga":       "https://site.api.espn.com/apis/site/v2/sports/soccer/ger.1/scoreboard",
-    "serie_a":          "https://site.api.espn.com/apis/site/v2/sports/soccer/ita.1/scoreboard",
-    "ligue_1":          "https://site.api.espn.com/apis/site/v2/sports/soccer/fra.1/scoreboard",
-    "champions_league": "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard",
-    "europa_league":    "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.europa/scoreboard",
-    "mls":              "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard",
-    "fifa_world_cup":   "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
+    "nba":              "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
+    "premier_league":   "https://site.web.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
+    "la_liga":          "https://site.web.api.espn.com/apis/site/v2/sports/soccer/esp.1/scoreboard",
+    "bundesliga":       "https://site.web.api.espn.com/apis/site/v2/sports/soccer/ger.1/scoreboard",
+    "serie_a":          "https://site.web.api.espn.com/apis/site/v2/sports/soccer/ita.1/scoreboard",
+    "ligue_1":          "https://site.web.api.espn.com/apis/site/v2/sports/soccer/fra.1/scoreboard",
+    "champions_league": "https://site.web.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard",
+    "europa_league":    "https://site.web.api.espn.com/apis/site/v2/sports/soccer/uefa.europa/scoreboard",
+    "mls":              "https://site.web.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard",
+    "fifa_world_cup":   "https://site.web.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
 }
 
 # EuroLeague endpoints
@@ -56,7 +56,7 @@ TSDB_CHECKS = {
 }
 
 # ESPN Player Stats endpoint (sample player — LeBron)
-ESPN_PLAYER_STATS_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/players/1966/gamelog"
+ESPN_PLAYER_STATS_URL = "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/players/1966/gamelog"
 
 # ── HTTP helpers ─────────────────────────────────────────────────────────────
 

@@ -212,7 +212,7 @@ def check_nba_games_yesterday(yesterday_il: str) -> bool:
     Returns True if at least one game was played.
     """
     date_str = yesterday_il.replace("-", "")
-    url = (f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba"
+    url = (f"https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba"
            f"/scoreboard?dates={date_str}")
     try:
         data = _fetch_json(url)
@@ -241,7 +241,7 @@ def fetch_player_stats(espn_id: str, yesterday_il: str,
 
     for date_str in dates_to_check:
         try:
-            url = (f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba"
+            url = (f"https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba"
                    f"/scoreboard?dates={date_str}")
             data = _fetch_json(url)
         except Exception:
@@ -281,7 +281,7 @@ def fetch_player_stats(espn_id: str, yesterday_il: str,
             game_id = event["id"]
             try:
                 summary = _fetch_json(
-                    f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba"
+                    f"https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba"
                     f"/summary?event={game_id}"
                 )
             except Exception:

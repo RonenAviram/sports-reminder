@@ -1079,7 +1079,7 @@ def fetch_player_last_game_stats(player: dict) -> dict | None:
 
     for date_str in dates_to_check:
         try:
-            url = (f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba"
+            url = (f"https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba"
                    f"/scoreboard?dates={date_str}")
             data = fetch_json(url)
         except Exception:
@@ -1102,7 +1102,7 @@ def fetch_player_last_game_stats(player: dict) -> dict | None:
             game_id = event["id"]
             try:
                 summary = fetch_json(
-                    f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba"
+                    f"https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba"
                     f"/summary?event={game_id}"
                 )
             except Exception:

@@ -47,17 +47,17 @@ PLAYER_WATCH = [
 # ESPN ENDPOINTS  (league_id → URL)
 # ─────────────────────────────────────────────────────────────────────────────
 ESPN_ENDPOINTS = {
-    "premier_league":       "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
-    "la_liga":              "https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/scoreboard",
-    "bundesliga":           "https://site.api.espn.com/apis/site/v2/sports/soccer/ger.1/scoreboard",
-    "serie_a":              "https://site.api.espn.com/apis/site/v2/sports/soccer/ita.1/scoreboard",
-    "ligue_1":              "https://site.api.espn.com/apis/site/v2/sports/soccer/fra.1/scoreboard",
-    "champions_league":     "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard",
-    "europa_league":        "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.europa/scoreboard",
-    "israeli_pl_soccer":    "https://site.api.espn.com/apis/site/v2/sports/soccer/isr.1/scoreboard",
-    "mls":                  "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard",
-    "fifa_world_cup":       "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
-    "nba":                  "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
+    "premier_league":       "https://site.web.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
+    "la_liga":              "https://site.web.api.espn.com/apis/site/v2/sports/soccer/esp.1/scoreboard",
+    "bundesliga":           "https://site.web.api.espn.com/apis/site/v2/sports/soccer/ger.1/scoreboard",
+    "serie_a":              "https://site.web.api.espn.com/apis/site/v2/sports/soccer/ita.1/scoreboard",
+    "ligue_1":              "https://site.web.api.espn.com/apis/site/v2/sports/soccer/fra.1/scoreboard",
+    "champions_league":     "https://site.web.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard",
+    "europa_league":        "https://site.web.api.espn.com/apis/site/v2/sports/soccer/uefa.europa/scoreboard",
+    "israeli_pl_soccer":    "https://site.web.api.espn.com/apis/site/v2/sports/soccer/isr.1/scoreboard",
+    "mls":                  "https://site.web.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard",
+    "fifa_world_cup":       "https://site.web.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
+    "nba":                  "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
     "euroleague":            None,    # uses EuroLeague official API (see below)
     "eurocup":               None,    # uses EuroCup official API (see below)
     "israeli_pl_basketball": None,    # uses TheSportsDB (ESPN returns empty for isr.1 basketball)
