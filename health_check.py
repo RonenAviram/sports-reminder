@@ -43,10 +43,8 @@ ESPN_CHECKS = {
 }
 
 # EuroLeague endpoints
-EUROLEAGUE_CHECKS = {
-    "euroleague": ("E", "E2025"),
-    "eurocup":    ("U", "U2025"),
-}
+from config import EUROLEAGUE_COMPETITION_CODES
+EUROLEAGUE_CHECKS = dict(EUROLEAGUE_COMPETITION_CODES)  # dynamic season
 
 # TheSportsDB endpoints
 TSDB_FREE_KEY = "3"
@@ -242,6 +240,22 @@ def check_euroleague(league_id: str, comp_code: str, season_code: str) -> dict:
                 return result
             result["details"]["sample_home"] = home.strip()
             result["details"]["sample_valid"] = True
+
+            # Stale-season guard: in-season (Oct–May) there must be future games
+            dates = []
+            for it in items:
+                try:
+                    dates.append(datetime.datetime.strptime(
+                        (it.findtext("date") or "").strip(), "%b %d, %Y").date())
+                except ValueError:
+                    pass
+            today = datetime.datetime.utcnow().date()
+            if dates:
+                result["details"]["last_game"] = max(dates).isoformat()
+            if dates and max(dates) < today and today.month in (10, 11, 12, 1, 2, 3, 4):
+                result["status"] = "stale_season"
+                result["error"] = (f"Season {season_code} has no future games "
+                                   f"(last {max(dates)}) — season code outdated?")
 
     except urllib.error.HTTPError as e:
         result["status"] = "http_error"

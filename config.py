@@ -1,5 +1,7 @@
 """SportsReminder configuration constants."""
 
+import datetime
+
 __all__ = [
     "FIREBASE_PROJECT",
     "FIREBASE_API_KEY",
@@ -11,6 +13,7 @@ __all__ = [
     "TSDB_LEAGUES",
     "TSDB_LEAGUE_IDS",
     "TSDB_SEASON",
+    "season_start_year",
     "TSDB_FREE_KEY",
     "EUROLEAGUE_COMPETITION_CODES",
     "NOISE_TOKENS",
@@ -76,18 +79,29 @@ TSDB_LEAGUE_IDS = {
     "israeli_pl_basketball": "4474",
     "israeli_pl_soccer":     "4644",
 }
-TSDB_SEASON = "2025-2026"
+# ─────────────────────────────────────────────────────────────────────────────
+# SEASON — computed dynamically (rolls over on July 1). Never hardcode!
+# Sep 2026 bug: hardcoded 2025 season → weekly email showed 0 EuroLeague games.
+# ─────────────────────────────────────────────────────────────────────────────
+def season_start_year(today: "datetime.date | None" = None) -> int:
+    """European season start year: Jul–Dec → this year, Jan–Jun → last year."""
+    today = today or datetime.datetime.utcnow().date()
+    return today.year if today.month >= 7 else today.year - 1
+
+
+_SEASON_YEAR = season_start_year()
+TSDB_SEASON = f"{_SEASON_YEAR}-{_SEASON_YEAR + 1}"
 TSDB_FREE_KEY = "3"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # EUROLEAGUE / EUROCUP OFFICIAL API
 # ESPN dropped these — use api-live.euroleague.net instead
 # Competition codes: E = EuroLeague, U = EuroCup
-# Season codes: E2025 = 2025-26 EuroLeague, U2025 = 2025-26 EuroCup
+# Season codes: E{year} / U{year} — e.g. E2026 = 2026-27 (computed dynamically)
 # ─────────────────────────────────────────────────────────────────────────────
 EUROLEAGUE_COMPETITION_CODES = {
-    "euroleague": ("E", "E2025"),
-    "eurocup":    ("U", "U2025"),
+    "euroleague": ("E", f"E{_SEASON_YEAR}"),
+    "eurocup":    ("U", f"U{_SEASON_YEAR}"),
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
